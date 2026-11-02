@@ -5,5 +5,5 @@
    Ganti teks di bawah dengan URL deployment Anda (berakhiran /exec).
    ========================================================= */
 window.APP_CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/GANTI_DENGAN_ID_DEPLOYMENT/exec'
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxQJb0L7jf_9DZ0ZuloNOODasHloRCDQhw8XLMun_ufKVIXC2jy_-wMYFoDEgWZ4UAV/exec'
 };
