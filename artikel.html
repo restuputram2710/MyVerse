@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="description" content="Personal portfolio — profile, experience, skills, achievements, and projects.">
+  <meta name="theme-color" content="#6B4EFF">
+  <title>Article — MyVerse</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <script>
+    (function () { try {
+      var g = function (k) { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; };
+      var t = g('mv_theme') || g('mv_theme_default') || 'sistem';
+      var dark = t === 'gelap' || (t === 'sistem' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) {} })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://drive.google.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=1.0.0">
+</head>
+<body data-page="article">
+  <div id="chrome-top"></div>
+  <main id="main">
+    <div class="container page-top">
+      <article class="article" id="art">
+        <div class="sk" style="width:120px;height:20px"></div>
+        <div class="sk sk-title" style="width:85%;margin-top:28px"></div>
+        <div class="sk sk-line" style="width:40%"></div>
+        <div class="sk sk-line" style="margin-top:36px"></div><div class="sk sk-line"></div><div class="sk sk-line" style="width:75%"></div>
+      </article>
+    </div>
+    <section class="section" id="more" hidden aria-labelledby="more-title">
+      <div class="container">
+        <div class="section-head"><div><span class="eyebrow">Keep reading</span><h2 class="h2" id="more-title">More Articles</h2></div></div>
+        <div class="grid-3" id="more-grid"></div>
+      </div>
+    </section>
+  </main>
+  <div id="chrome-foot"></div>
+
+  <script src="js/config.js?v=1.0.0"></script>
+  <script src="js/icons.js?v=1.0.0"></script>
+  <script src="js/core.js?v=1.0.0"></script>
+  <script src="js/site.js?v=1.0.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="js/pages.js?v=1.0.0"></script>
+</body>
+</html>
