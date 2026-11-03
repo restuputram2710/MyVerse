@@ -324,7 +324,7 @@ html[data-theme="dark"] .hl { background: linear-gradient(92deg, #A594FF 0%, #C4
 /* ---------- Proyek ---------- */
 .toolbar { display: flex; gap: 16px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 28px; }
 .toolbar .search-box { width: min(300px, 100%); }
-.proj-card { overflow: hidden; display: flex; flex-direction: column; text-decoration: none !important; color: inherit; }
+.proj-card { position: relative; overflow: hidden; display: flex; flex-direction: column; text-decoration: none !important; color: inherit; }
 .proj-cover { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface-tint); border-bottom: 1px solid var(--border); }
 .proj-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s var(--ease); }
 .proj-card:hover .proj-cover img { transform: scale(1.04); }
@@ -477,7 +477,7 @@ html[data-theme="dark"] .hl { background: linear-gradient(92deg, #A594FF 0%, #C4
 .page-band { padding: 56px 0 40px; background: linear-gradient(180deg, var(--surface-tint), var(--bg)); border-bottom: 1px solid var(--border); }
 .page-band h1 { font-size: clamp(36px, 5vw, 52px); font-weight: 800; letter-spacing: -.03em; margin-top: 6px; }
 .page-band p { color: var(--text-2); font-size: 17px; margin-top: 10px; max-width: 620px; }
-.post-card { overflow: hidden; display: flex; flex-direction: column; color: inherit; text-decoration: none !important; }
+.post-card { position: relative; overflow: hidden; display: flex; flex-direction: column; color: inherit; text-decoration: none !important; }
 .post-cover { aspect-ratio: 16 / 9; overflow: hidden; background: var(--surface-tint); border-bottom: 1px solid var(--border); }
 .post-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s var(--ease); }
 .post-card:hover .post-cover img { transform: scale(1.04); }

@@ -13,7 +13,8 @@
   const SKILL_CATS = ['Technical', 'Professional', 'Educational'];
   const st = { d: null, instant: false, expType: 'all', achType: 'all', skillCat: null, projCat: 'all', projQ: '', projShown: 6, testi: 0, timer: null };
 
-  const rv = function (delay) { return 'reveal' + (st.instant ? ' is-in' : '') + '" style="--d:' + (delay || 0) + 'ms'; };
+  // Kelas reveal + SATU atribut style (jangan tambah style="…" kedua di tag yang sama — browser membuangnya)
+  const rv = function (delay, css) { return 'reveal' + (st.instant ? ' is-in' : '') + '" style="--d:' + (delay || 0) + 'ms' + (css ? ';' + css : ''); };
   const fmtYM = function (s) { s = String(s || ''); return /^\d{4}-\d{2}$/.test(s) ? MV.fmtDate(s, 'en-US', { month: 'short', year: 'numeric' }) : s; };
   const show = function (id, on) {
     const el = document.getElementById(id);
@@ -80,7 +81,7 @@
       '<div class="about-photo ' + rv(0) + '">' + (fid ? MV.imgTag(fid, 'Photo of ' + (p.nama || ''), 900) : '<div class="portrait" style="inset:0;border:0;box-shadow:none;border-radius:0"><div class="initials">' + esc(MV.initials(p.nama)) + '</div></div>') +
       (p.lokasi ? '<div class="tag glass" style="display:flex;align-items:center;gap:8px">' + I('map-pin', 'icon-sm') + esc(p.lokasi) + '</div>' : '') + '</div>' +
       '<div class="about-text"><span class="eyebrow ' + rv(0) + '">About Me</span><h2 class="h2 ' + rv(60) + '">Who I Am</h2>' +
-      '<div class="' + rv(120) + '" style="margin-top:20px">' + MV.paragraphs(p.tentang) + MV.paragraphs(p.kepribadian_profesional) + '</div>' +
+      '<div class="' + rv(120, 'margin-top:20px') + '">' + MV.paragraphs(p.tentang) + MV.paragraphs(p.kepribadian_profesional) + '</div>' +
       (journey.length ? '<div class="journey ' + rv(180) + '"><div class="journey-title">Career Journey</div><div class="journey-track" style="--n:' + journey.length + '">' +
         journey.map(function (j) { return '<div class="milestone"><b class="tnum">' + esc(j.tahun) + '</b><strong>' + esc(j.judul) + '</strong>' + (j.ket ? '<span>' + esc(j.ket) + '</span>' : '') + '</div>'; }).join('') + '</div></div>' : '') +
       '</div>';
@@ -200,7 +201,7 @@
     });
     const shown = list.slice(0, st.projShown);
     $('#proj-grid').innerHTML = shown.length ? shown.map(function (p, i) {
-      return '<article class="card card-hover proj-card ' + rv((i % 3) * 60) + '" style="position:relative">' +
+      return '<article class="card card-hover proj-card ' + rv((i % 3) * 60) + '">' +
         '<div class="proj-cover">' + (p.gambar_id ? MV.imgTag(p.gambar_id, p.judul, 900) : MV.coverPh(p.judul, p.id)) +
         (p.unggulan ? '<span class="badge badge-solid">' + I('star', 'icon-sm') + 'Featured</span>' : '') + '</div>' +
         '<div class="proj-body">' + (kat[p.kategori_id] ? '<span class="badge" style="align-self:flex-start">' + esc(kat[p.kategori_id]) + '</span>' : '') +
