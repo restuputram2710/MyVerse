@@ -1,4 +1,6 @@
-# Panduan Instalasi MyVerse v1.0.0
+# Panduan Instalasi MyVerse v1.1.0
+
+> Sudah memakai MyVerse v1.0.x? Ikuti **PANDUAN-UPDATE-v1.1.md**, bukan panduan ini.
 
 MyVerse terdiri dari dua bagian yang dipasang terpisah:
 
@@ -27,7 +29,7 @@ Pilih **salah satu** cara:
 - **Cara mudah:** di panel kiri, klik **+** di samping **Layanan** → pilih **Drive API** → **Tambahkan**.
 - **Cara manifest:** ⚙️ **Setelan Proyek** → centang **"Tampilkan file manifes appsscript.json di editor"** → buka `appsscript.json` di editor → ganti isinya dengan `appsscript.json` dari paket ini → Simpan. Cara ini sekaligus mengatur zona waktu ke Asia/Jakarta.
 
-> Tanpa langkah ini aplikasi tetap jalan, tetapi tombol unduh/cetak pada pratinjau PDF (CV & sertifikat) belum dimatikan.
+> Tanpa langkah ini aplikasi tetap jalan, tetapi tombol unduh/cetak pada pratinjau PDF (CV, sertifikat) dan karya ilmiah "lihat saja" belum dimatikan.
 
 ### A3. Jalankan `setupAwal()` — sekali
 1. Di bilah atas editor, pilih fungsi **`setupAwal`** dari menu tarik-turun, lalu klik **▶ Jalankan**.
@@ -36,7 +38,7 @@ Pilih **salah satu** cara:
 3. Buka **Log eksekusi** (muncul di bawah). Anda akan melihat:
 
 ```
-🚀 Menyiapkan MyVerse v1.0.0...
+🚀 Menyiapkan MyVerse v1.1.0...
 📁 Folder MyVerse_Files dibuat.
 🗃️ Spreadsheet MyVerse_DB dibuat.
 📝 Data contoh diisi: Profil, Kontak, Pengaturan, Kategori, ...
@@ -51,8 +53,8 @@ Pilih **salah satu** cara:
 4. **Catat sandi admin awal** di tempat aman. Sandi ini tidak disimpan di mana pun dalam bentuk terbaca.
 
 Hasil di Google Drive Anda:
-- Folder **MyVerse_Files** berisi `01_Profil` sampai `06_Ikon`.
-- Spreadsheet **MyVerse_DB** berisi 15 tab data dan 1 tab catatan `AppConfig`. Semuanya sudah terisi data contoh, sehingga situs langsung tampil.
+- Folder **MyVerse_Files** berisi `01_Profil` sampai `07_Karya_Ilmiah`.
+- Spreadsheet **MyVerse_DB** berisi 16 tab data (termasuk `Mitra`) dan 1 tab catatan `AppConfig`. Semuanya sudah terisi data contoh, sehingga situs langsung tampil.
 
 > `setupAwal()` aman dijalankan ulang. Fungsi ini tidak menimpa data, tidak mengganti sandi, dan tidak membuat folder dobel. Jalankan lagi bila suatu saat ada tab yang terhapus.
 
@@ -60,7 +62,7 @@ Hasil di Google Drive Anda:
 1. Klik **Deploy** (kanan atas) → **Deployment baru**.
 2. Klik ikon ⚙️ di samping "Pilih jenis" → pilih **Aplikasi web**.
 3. Isi:
-   - Deskripsi: `MyVerse v1.0.0`
+   - Deskripsi: `MyVerse v1.1.0`
    - **Jalankan sebagai: Saya**
    - **Yang memiliki akses: Siapa saja**
 4. Klik **Deploy** → **salin URL Aplikasi web** (berakhiran `/exec`).
@@ -126,7 +128,8 @@ Unggah lewat terminal, bukan lewat menu "Upload files" di web GitHub. Menu itu m
    Saat diminta **Password**, tempel **Personal Access Token**, bukan sandi GitHub. Layar memang terlihat kosong saat Anda menempel; itu normal, langsung tekan Enter.
    Cara membuat token: https://github.com/settings/tokens → **Generate new token (classic)** → centang **repo** → **Generate** → salin token `ghp_…` (hanya tampil sekali).
 6. **Aktifkan Pages:** di repository → **Settings** → **Pages** → Source: **Deploy from a branch** → Branch: **main** / **(root)** → **Save**. Centang **Enforce HTTPS**.
-7. Tunggu 1–2 menit. Situs tampil di `https://USERNAME.github.io/myverse/`.
+7. Tunggu 1–2 menit. Situs tampil di `https://USERNAME.github.io/NAMA-REPO/`.
+   **Huruf besar/kecil harus sama persis dengan nama repository.** Repository `MyVerse` beralamat `/MyVerse/`; alamat `/myverse/` akan menampilkan 404 "There isn't a GitHub Pages site here". Cara paling aman: salin alamat dari **Settings → Pages** ("Your site is live at …").
 
 **Memperbarui situs nanti:** dari folder `myverse` yang sama, jalankan `git add .`, lalu `git commit -m "keterangan"`, lalu `git push`. Bila browser masih menampilkan versi lama, tekan **Ctrl+Shift+R**.
 
@@ -138,15 +141,16 @@ Unggah lewat terminal, bukan lewat menu "Upload files" di web GitHub. Menu itu m
 2. **Segera ganti sandi:** **Pengaturan → Ganti Kata Sandi**. Minimal 10 karakter dengan huruf dan angka. Sesi di perangkat lain otomatis berakhir.
 3. **Pengaturan → Email penerima notifikasi:** isi email untuk menerima pesan dari formulir kontak. Bila dikosongkan, email akun Google pemilik yang dipakai.
 4. Ganti data contoh dengan data Anda:
-   - **Profil**: nama, profesi, foto, CV. Untuk profesi, apit kata dengan `*bintang*` agar berwarna ungu.
+   - **Profil**: nama, profesi, foto, CV, peran bergantian di hero, bahasa, judul About, foto latar hero. Apit kata dengan `*bintang*` agar berwarna biru.
    - **Kontak & Sosial**: email publik, telepon, media sosial.
-   - **Pengalaman, Pendidikan, Keterampilan, Prestasi, Proyek, Layanan, Proses, Testimoni, Blog**: ubah atau hapus data contoh lewat tombol ✏️ dan 🗑️.
+   - **Pengalaman, Pendidikan, Keterampilan, Prestasi, Proyek, Layanan, Proses, Testimoni, Mitra & Logo, Blog & Karya Ilmiah**: ubah atau hapus data contoh lewat tombol ✏️ dan 🗑️.
+   - **Karya ilmiah**: Blog & Karya Ilmiah → **Unggah Karya Ilmiah** → seret PDF/DOC/DOCX (maks. 10 MB) → isi penulis & abstrak → Terbitkan. Saklar "Izinkan pengunjung mengunduh berkas" menentukan apakah tombol Download tampil.
 5. Klik **Lihat Situs** untuk memeriksa hasilnya. Perubahan tampil pada muatan halaman berikutnya.
 
 Tips mengisi:
 - Urutan baris di tabel = urutan tampil di situs. Atur dengan tombol ▲▼.
 - Saklar **Tampil** menyembunyikan data tanpa menghapusnya.
-- Foto dikompres otomatis di browser sampai sekitar 1 MB, sedangkan PDF maksimal 5 MB.
+- Foto dikompres otomatis di browser sampai sekitar 1 MB (PNG transparan tetap transparan). PDF CV/sertifikat maksimal 5 MB; dokumen karya ilmiah maksimal 10 MB.
 - Mengedit langsung di spreadsheet juga boleh. Trigger `saatSheetDiubah` membuat situs langsung memakai data terbaru.
 
 ---
@@ -226,7 +230,7 @@ Batasan:
 1. Tempel `Kode.gs` versi baru lalu **Simpan**.
 2. **Deploy → Kelola deployment** → klik ✏️ **Edit** pada deployment yang ada → Versi: **Versi baru** → **Deploy**.
    **Jangan** membuat "Deployment baru", karena URL `/exec` akan berubah dan `config.js` harus diisi ulang.
-3. Bila ada perubahan frontend, naikkan angka `?v=1.0.0` di berkas HTML lalu `git push`.
+3. Bila ada perubahan frontend, naikkan angka `?v=1.1.0` di berkas HTML lalu `git push`.
 
 ---
 
@@ -237,7 +241,8 @@ Batasan:
 | Situs menampilkan "Configuration incomplete" | `js/config.js` belum diisi | Isi URL `/exec`, lalu `git push` |
 | "Tidak bisa terhubung ke server" | URL salah atau Web App belum di-deploy untuk "Siapa saja" | Cek langkah A4; buka `URL?action=public.bootstrap` di browser |
 | "Respons server tidak valid" | Akses deploy bukan "Siapa saja", atau perlu login Google | Edit deployment → Yang memiliki akses: **Siapa saja** |
-| Halaman 404 di GitHub Pages | `git init` dijalankan di folder yang salah | Repository harus berisi `index.html` di root. Push ulang dari folder `myverse` |
+| 404 "There isn't a GitHub Pages site here" | Huruf besar/kecil di alamat beda dengan nama repository, atau Pages belum diaktifkan | Salin alamat persis dari Settings → Pages (mis. `/MyVerse/`, bukan `/myverse/`) |
+| Halaman 404 "File not found" di GitHub Pages | `git init` dijalankan di folder yang salah | Repository harus berisi `index.html` di root. Push ulang dari folder `myverse` |
 | Tampilan tanpa warna/layout | Berkas diunggah lewat "Upload files" | Unggah ulang lewat terminal agar folder `css/` & `js/` utuh |
 | Perubahan di Sheets tidak tampil | Trigger edit belum terpasang | Pengaturan → **Bersihkan cache situs**, atau jalankan `setupAwal()` lagi |
 | Gambar tidak tampil | Izin berbagi berkas diblokir kebijakan akun Workspace | Set berkas di `MyVerse_Files` menjadi "Siapa saja yang memiliki link — Pelihat" |
@@ -262,5 +267,5 @@ Batasan:
 
 ## Ringkasan hasil uji sebelum diserahkan
 
-- **42/42 uji backend** di simulator Apps Script: setup aman diulang; penguncian login; token kedaluwarsa & dicabut; validasi & sanitasi; injeksi rumus Sheets dicegah; unggah berkas & proteksi PDF; suka 1 per perangkat; email tidak dikirim saat lock dipegang; cache >100 KB dipecah; impor dry-run/idempoten/pemetaan kategori; rahasia tidak pernah muncul di Sheets, log, maupun respons.
-- **50/50 uji browser** (Chrome) dengan frontend di port berbeda dari backend: semua halaman publik & menu admin, unggah gambar, mode gelap, tampilan HP 390 px tanpa geser horizontal, **tanpa permintaan preflight CORS** (penyebab umum gagal di Apps Script), dan tanpa error JavaScript.
+- **47/47 uji backend** di simulator Apps Script: migrasi v1.0 → v1.1 tanpa mengubah data; unggah & izin unduh karya ilmiah; setup aman diulang; penguncian login; token kedaluwarsa & dicabut; validasi & sanitasi; injeksi rumus Sheets dicegah; unggah berkas & proteksi PDF; suka 1 per perangkat; email tidak dikirim saat lock dipegang; cache >100 KB dipecah; impor dry-run/idempoten/pemetaan kategori; rahasia tidak pernah muncul di Sheets, log, maupun respons.
+- **79/79 uji browser** (Chrome) dengan frontend di port berbeda dari backend: semua halaman publik & menu admin, unggah gambar & karya ilmiah, animasi & interaksi, mode gelap, tampilan HP 390 px tanpa geser horizontal, **tanpa permintaan preflight CORS** (penyebab umum gagal di Apps Script), dan tanpa error JavaScript.

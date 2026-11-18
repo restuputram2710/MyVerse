@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#040915"/>
+      <stop offset=".38" stop-color="#0A1B37"/>
+      <stop offset=".58" stop-color="#173763"/>
+      <stop offset=".68" stop-color="#2C5A8F"/>
+    </linearGradient>
+    <radialGradient id="moon" cx="1170" cy="230" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#CFE3FF" stop-opacity=".55"/>
+      <stop offset=".12" stop-color="#9CC2FF" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#2C5A8F" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2B4E7E"/><stop offset="1" stop-color="#16305A"/>
+    </linearGradient>
+    <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#173159"/><stop offset="1" stop-color="#0E2141"/>
+    </linearGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A3A66"/><stop offset=".35" stop-color="#0D2140"/><stop offset="1" stop-color="#050C19"/>
+    </linearGradient>
+    <linearGradient id="streak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BFD8FF" stop-opacity=".55"/><stop offset="1" stop-color="#BFD8FF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="3"/></filter>
+    <style>
+      .tw { animation: tw 4s ease-in-out infinite; }
+      .tw:nth-child(3n) { animation-delay: -1.3s; animation-duration: 5.5s; }
+      .tw:nth-child(4n) { animation-delay: -2.6s; animation-duration: 3.2s; }
+      @keyframes tw { 0%, 100% { opacity: .9; } 50% { opacity: .25; } }
+      @media (prefers-reduced-motion: reduce) { .tw { animation: none; } }
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <rect width="1600" height="900" fill="url(#moon)"/>
+  <circle cx="1170" cy="230" r="34" fill="#E8F1FF" opacity=".9"/>
+  <g fill="#DCE9FF">
+    <circle class="tw" cx="90" cy="70" r="1.6"/><circle class="tw" cx="210" cy="140" r="1.1"/><circle class="tw" cx="330" cy="60" r="1.4"/>
+    <circle class="tw" cx="460" cy="190" r="1"/><circle class="tw" cx="560" cy="90" r="1.7"/><circle class="tw" cx="690" cy="40" r="1.2"/>
+    <circle class="tw" cx="760" cy="170" r="1"/><circle class="tw" cx="880" cy="110" r="1.5"/><circle class="tw" cx="980" cy="60" r="1.1"/>
+    <circle class="tw" cx="1050" cy="150" r="1.3"/><circle class="tw" cx="1290" cy="90" r="1.6"/><circle class="tw" cx="1380" cy="170" r="1"/>
+    <circle class="tw" cx="1480" cy="60" r="1.4"/><circle class="tw" cx="1550" cy="200" r="1.1"/><circle class="tw" cx="150" cy="250" r="1"/>
+    <circle class="tw" cx="390" cy="280" r="1.2"/><circle class="tw" cx="620" cy="250" r="1"/><circle class="tw" cx="1420" cy="290" r="1.2"/>
+    <circle cx="40" cy="190" r=".8" opacity=".6"/><circle cx="270" cy="30" r=".8" opacity=".7"/><circle cx="520" cy="30" r=".9" opacity=".6"/>
+    <circle cx="820" cy="260" r=".8" opacity=".5"/><circle cx="930" cy="230" r=".9" opacity=".6"/><circle cx="1240" cy="30" r=".8" opacity=".7"/>
+    <circle cx="1340" cy="250" r=".9" opacity=".5"/><circle cx="1590" cy="110" r=".8" opacity=".6"/><circle cx="720" cy="300" r=".8" opacity=".4"/>
+  </g>
+  <!-- pegunungan jauh -->
+  <path fill="url(#far)" d="M0 520 L120 455 L190 480 L300 380 L360 410 L450 330 L520 390 L600 350 L700 430 L790 370 L870 300 L960 380 L1040 340 L1120 410 L1210 330 L1290 280 L1380 360 L1460 320 L1540 380 L1600 360 L1600 620 L0 620 Z"/>
+  <path fill="#5E83B5" opacity=".35" d="M450 330 L475 352 L462 352 L448 368 L436 350 Z M870 300 L898 326 L882 324 L866 344 L852 322 Z M1290 280 L1322 310 L1302 306 L1286 330 L1268 304 Z M300 380 L322 398 L306 398 L296 410 L286 396 Z M1210 330 L1232 350 L1216 350 L1206 362 L1196 348 Z"/>
+  <!-- pegunungan tengah -->
+  <path fill="url(#mid)" d="M0 560 L90 520 L170 545 L260 470 L340 520 L420 480 L520 540 L610 470 L700 520 L780 480 L880 545 L980 470 L1080 530 L1160 490 L1260 540 L1350 470 L1440 520 L1520 495 L1600 520 L1600 640 L0 640 Z"/>
+  <!-- bukit dekat -->
+  <path fill="#0A1A33" d="M0 600 C 160 560, 300 600, 460 585 S 760 560, 900 590 S 1220 600, 1380 575 S 1540 590, 1600 580 L1600 650 L0 650 Z"/>
+  <!-- danau -->
+  <rect y="630" width="1600" height="270" fill="url(#lake)"/>
+  <g opacity=".22" transform="translate(0 1260) scale(1 -1)">
+    <path fill="#2B4E7E" d="M0 630 L90 650 L170 638 L260 675 L340 650 L420 670 L520 640 L610 675 L700 650 L780 670 L880 638 L980 675 L1080 645 L1160 665 L1260 640 L1350 675 L1440 650 L1520 662 L1600 650 L1600 630 Z"/>
+  </g>
+  <g filter="url(#blur)">
+    <rect x="1140" y="640" width="60" height="6" rx="3" fill="url(#streak)"/>
+    <rect x="1120" y="668" width="100" height="5" rx="2.5" fill="#BFD8FF" opacity=".28"/>
+    <rect x="1150" y="700" width="44" height="4" rx="2" fill="#BFD8FF" opacity=".22"/>
+    <rect x="1100" y="738" width="140" height="4" rx="2" fill="#BFD8FF" opacity=".14"/>
+    <rect x="1160" y="780" width="30" height="3" rx="1.5" fill="#BFD8FF" opacity=".12"/>
+  </g>
+  <!-- pohon cemara di tepi -->
+  <g fill="#040A16">
+    <path d="M1460 900 L1460 560 L1430 640 L1446 636 L1420 700 L1440 694 L1408 770 L1432 762 L1396 850 L1524 850 L1490 762 L1512 770 L1482 694 L1500 700 L1476 636 L1490 640 Z"/>
+    <path d="M1560 900 L1560 500 L1528 590 L1546 586 L1518 660 L1540 652 L1504 740 L1530 732 L1492 830 L1630 830 L1592 732 L1618 740 L1582 652 L1604 660 L1576 586 L1594 590 Z"/>
+    <path d="M1380 900 L1380 640 L1358 700 L1370 698 L1350 750 L1366 746 L1340 810 L1420 810 L1394 746 L1410 750 L1390 698 L1402 700 Z"/>
+    <path d="M60 900 L60 590 L32 670 L48 666 L22 730 L42 724 L10 800 L110 800 L78 724 L98 730 L72 666 L88 670 Z"/>
+    <path d="M150 900 L150 650 L130 705 L142 702 L122 750 L138 746 L112 810 L188 810 L162 746 L178 750 L158 702 L170 705 Z"/>
+    <rect y="860" width="1600" height="40"/>
+  </g>
+</svg>

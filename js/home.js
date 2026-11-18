@@ -1,7 +1,8 @@
 /* =========================================================
-   MyVerse — home.js (landing page, 12 bagian)
+   MyVerse — home.js (landing page)
    Tampil instan dari cache lokal, lalu diperbarui diam-diam
    bila versi isi di server berubah (SWR).
+   v1.1: tampilan "Midnight Blue" + animasi interaktif.
    ========================================================= */
 (function () {
   const MV = window.MV, $ = MV.$, esc = MV.esc, I = MV.icon;
@@ -11,80 +12,168 @@
   const LABEL = { Kerja: 'Work', Mengajar: 'Teaching', Organisasi: 'Organization', Profesional: 'Professional',
     Prestasi: 'Achievement', Penghargaan: 'Award', Sertifikat: 'Certificate' };
   const SKILL_CATS = ['Technical', 'Professional', 'Educational'];
-  const st = { d: null, instant: false, expType: 'all', achType: 'all', skillCat: null, projCat: 'all', projQ: '', projShown: 6, testi: 0, timer: null };
+  const st = { d: null, instant: false, expType: 'all', achType: 'all', skillCat: null, projCat: 'all', projQ: '', projShown: 6, projAnim: false, testi: 0, timer: null, typeT: null };
 
   // Kelas reveal + SATU atribut style (jangan tambah style="…" kedua di tag yang sama — browser membuangnya)
   const rv = function (delay, css) { return 'reveal' + (st.instant ? ' is-in' : '') + '" style="--d:' + (delay || 0) + 'ms' + (css ? ';' + css : ''); };
   const fmtYM = function (s) { s = String(s || ''); return /^\d{4}-\d{2}$/.test(s) ? MV.fmtDate(s, 'en-US', { month: 'short', year: 'numeric' }) : s; };
+  const count = function (n, suf) {
+    return '<span class="tnum" data-count="' + n + '" data-suffix="' + (suf || '') + '"' + (st.instant ? ' data-done="1">' + n + (suf || '') : '>0' + (suf || '')) + '</span>';
+  };
   const show = function (id, on) {
     const el = document.getElementById(id);
     if (el) el.hidden = !on;
-    MV.$$('[data-nav="' + id + '"]').forEach(function (a) { a.parentElement && (a.parentElement.tagName === 'LI' ? a.parentElement : a).toggleAttribute('hidden', !on); });
   };
 
   // ---------- Hero ----------
   function hero(d) {
-    const p = d.profil || {}, s = d.stats || {};
-    const top = d.keterampilan.slice().sort(function (a, b) { return b.tingkat - a.tingkat; }).slice(0, 4);
-    const stat = function (ic, n, suf, label) {
-      const shown = st.instant ? n + suf : '0' + suf;
-      return '<div class="hero-stat"><span class="icon-tile">' + I(ic) + '</span><div><b class="tnum" data-count="' + n + '" data-suffix="' + suf + '"' + (st.instant ? ' data-done="1"' : '') + '>' + shown + '</b><span>' + label + '</span></div></div>';
+    const p = d.profil || {}, s = d.stats || {}, set = d.pengaturan || {};
+    const nama = p.nama || 'Your Name';
+    const roles = String(p.peran_bergilir || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    const bg = p.hero_bg_id ? MV.imgTag(p.hero_bg_id, '', 2000, 'fetchpriority="high" loading="eager"') : '<img src="assets/hero-bg.svg" alt="">';
+    const foto = p.foto_id ? MV.imgTag(p.foto_id, 'Portrait of ' + nama, 1000, 'fetchpriority="high" loading="eager"') : '<div class="initials">' + esc(MV.initials(nama)) + '</div>';
+    const role = roles.length > 1
+      ? '<span class="sr-only">' + esc(roles.join(', ')) + '</span><span aria-hidden="true"><span class="typed" id="typed">' + esc(roles[0]) + '</span><span class="caret"></span></span>'
+      : MV.richText(roles[0] || p.profesi || '');
+    const mitra = d.mitra || [];
+    const logo = function (m, dup) {
+      const inner = (m.logo_id ? MV.imgTag(m.logo_id, dup ? '' : m.nama, 300) : '') + (m.logo_id ? '' : esc(m.nama));
+      const attrs = ' class="logo-item"' + (dup ? ' aria-hidden="true" tabindex="-1"' : '') + ' title="' + esc(m.nama) + '"';
+      return m.tautan ? '<a href="' + esc(m.tautan) + '" target="_blank" rel="noopener noreferrer"' + attrs + '>' + inner + '</a>' : '<span' + attrs + '>' + inner + '</span>';
     };
-    const foto = p.foto_id ? MV.imgTag(p.foto_id, 'Portrait of ' + (p.nama || ''), 900, 'fetchpriority="high"') : '<div class="initials">' + esc(MV.initials(p.nama)) + '</div>';
-    $('#home').innerHTML = '<div class="container hero-grid">' +
-      '<div class="hero-copy">' +
-      '<span class="eyebrow-pill ' + rv(0) + '">' + I('sparkles', 'icon-sm') + 'Hello, I\'m</span>' +
-      '<h1 class="' + rv(60) + '">' + esc(p.nama || 'Your Name') + '</h1>' +
-      '<p class="role ' + rv(120) + '">' + MV.richText(p.profesi || '') + '</p>' +
-      (p.deskripsi_singkat ? '<p class="intro ' + rv(180) + '">' + esc(p.deskripsi_singkat) + '</p>' : '<div style="height:28px"></div>') +
-      '<div class="hero-cta ' + rv(240) + '"><a class="btn btn-primary" href="#projects">View My Work ' + I('arrow-right', 'icon-sm') + '</a>' +
-      (p.cv_file_id ? '<button type="button" class="btn btn-secondary" data-cv>' + I('eye', 'icon-sm') + 'View CV</button>' : '') + '</div>' +
-      '<div class="hero-stats ' + rv(300) + '">' +
-      (s.tahun ? stat('briefcase', s.tahun, '+', 'Years Experience') : '') +
-      stat('folder', s.proyek || 0, '', 'Projects Completed') +
-      stat('award', s.prestasi || 0, '', 'Achievements & Certificates') + '</div>' +
-      '</div>' +
-      '<div class="hero-visual ' + rv(120) + '" id="hero-visual">' +
-      '<svg class="rings" viewBox="0 0 400 400" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="200" cy="200" r="198" stroke-dasharray="2 7"/><circle cx="200" cy="200" r="165"/><circle cx="200" cy="200" r="128" stroke-dasharray="1 5"/></svg>' +
-      '<div class="portrait">' + foto + '</div>' +
-      (p.status_saat_ini ? '<div class="float-card glass fc-1"><div class="fc-label">Status</div><div class="fc-value"><span class="dot" aria-hidden="true"></span>' + esc(p.status_saat_ini) + '</div></div>' : '') +
-      (top.length ? '<div class="float-card glass fc-2" aria-hidden="true"><div class="fc-label">Top skills</div>' + top.map(function (k) {
-        return '<div class="fc-skill"><span>' + esc(k.nama) + '</span><span class="toggle-mini"></span></div>';
-      }).join('') + '</div>' : '') +
-      (top[0] ? '<div class="float-card glass fc-3" aria-hidden="true"><div class="fc-big tnum">' + top[0].tingkat + '%</div><div class="fc-label" style="margin-top:6px">' + esc(top[0].nama) + '</div></div>' : '') +
-      '</div></div>';
+    const moving = mitra.length >= 5 && !MV.reduceMotion;
+    const below = mitra.length
+      ? '<div class="trusted ' + rv(360) + '"><p class="trusted-label">' + esc(set.judul_mitra || 'Trusted by') + '</p><div class="marquee' + (moving ? ' is-moving' : '') + '"><div class="marquee-track" style="--dur:' + Math.max(20, mitra.length * 5) + 's">' +
+        mitra.map(function (m) { return logo(m); }).join('') + (moving ? mitra.map(function (m) { return logo(m, true); }).join('') : '') + '</div></div></div>'
+      : '<div class="hero-mini ' + rv(360) + '">' +
+        (s.tahun ? '<div class="mini-stat">' + I('briefcase') + '<div><b>' + count(s.tahun, '+') + '</b><span>Years Experience</span></div></div>' : '') +
+        '<div class="mini-stat">' + I('folder') + '<div><b>' + count(s.proyek || 0) + '</b><span>Projects Completed</span></div></div>' +
+        (s.prestasi ? '<div class="mini-stat">' + I('award') + '<div><b>' + count(s.prestasi) + '</b><span>Achievements</span></div></div>' : '') +
+        (d.karya ? '<div class="mini-stat">' + I('book-open') + '<div><b>' + count(d.karya) + '</b><span>Research Papers</span></div></div>' : '') + '</div>';
+    $('#home').innerHTML =
+      '<div class="hero-bg" aria-hidden="true">' + bg + '</div><div class="hero-shade" aria-hidden="true"></div><div class="hero-light" aria-hidden="true"></div>' +
+      '<div class="container hero-grid"><div class="hero-copy">' +
+      '<p class="hello ' + rv(0) + '">Hello, I\'m</p>' +
+      '<h1 class="' + rv(70) + '">' + esc(nama) + '</h1>' +
+      '<p class="role ' + rv(140) + '">' + role + '</p>' +
+      (p.deskripsi_singkat ? '<p class="intro ' + rv(210) + '">' + esc(p.deskripsi_singkat) + '</p>' : '<div style="height:28px"></div>') +
+      '<div class="hero-cta ' + rv(280) + '"><a class="btn btn-primary" href="#projects" data-magnetic>View My Work ' + I('arrow-right', 'icon-sm') + '</a>' +
+      '<a class="btn btn-outline-light" href="#contact" data-magnetic>' + I('mail', 'icon-sm') + 'Contact Me</a>' +
+      (p.cv_file_id ? '<button type="button" class="btn btn-ghost" data-cv>' + I('eye', 'icon-sm') + 'View CV</button>' : '') + '</div>' +
+      below + '</div>' +
+      '<div class="hero-visual from-right ' + rv(160) + '" id="hero-visual"><div class="hero-glow" aria-hidden="true"></div><div class="hero-ring" aria-hidden="true"></div>' +
+      '<div class="hero-photo">' + foto + '</div>' +
+      (p.status_saat_ini ? '<div class="float-card fc-1"><span class="dot" aria-hidden="true"></span>' + esc(p.status_saat_ini) + '</div>' : '') +
+      (s.tahun || s.proyek ? '<div class="float-card fc-2" aria-hidden="true"><span class="icon-tile">' + I(s.tahun ? 'briefcase' : 'folder', 'icon-sm') + '</span><div><b class="tnum">' + (s.tahun ? s.tahun + '+' : s.proyek) + '</b><small>' + (s.tahun ? 'Years Experience' : 'Projects') + '</small></div></div>' : '') +
+      '</div></div>' +
+      '<a class="scroll-cue" href="#about" aria-label="Scroll to About"></a>';
     const cv = $('[data-cv]');
     if (cv) cv.addEventListener('click', function () { MV.viewer.open({ type: 'pdf', id: p.cv_file_id, title: 'Curriculum Vitae' }); });
-    parallax();
+    if (roles.length > 1) typewriter(roles);
+    heroPointer();
   }
 
-  function parallax() {
-    const box = $('#hero-visual');
-    if (!box || MV.reduceMotion || !matchMedia('(pointer: fine)').matches) return;
-    const cards = MV.$$('.float-card', box);
-    $('#home').addEventListener('pointermove', function (e) {
-      const r = box.getBoundingClientRect();
-      const x = (e.clientX - r.left - r.width / 2) / r.width, y = (e.clientY - r.top - r.height / 2) / r.height;
-      cards.forEach(function (c, i) { const f = (i + 1) * 6; c.style.setProperty('--px', (x * f).toFixed(1) + 'px'); c.style.setProperty('--py', (y * f).toFixed(1) + 'px'); });
-    });
+  function typewriter(roles) {
+    clearTimeout(st.typeT);
+    const el = $('#typed');
+    if (!el) return;
+    if (MV.reduceMotion) { el.textContent = roles.join(' · '); const c = el.nextElementSibling; if (c) c.remove(); return; }
+    let i = 0, n = roles[0].length, del = true;
+    const step = function () {
+      if (!el.isConnected) return;
+      if (del) { n--; if (n <= 0) { n = 0; del = false; i = (i + 1) % roles.length; } }
+      else { n++; if (n >= roles[i].length) { el.textContent = roles[i]; del = true; st.typeT = setTimeout(step, 2200); return; } }
+      el.textContent = roles[i].slice(0, n) || '​';
+      st.typeT = setTimeout(step, del ? 36 : 72);
+    };
+    st.typeT = setTimeout(step, 2600);
   }
+
+  function heroPointer() {
+    const home = $('#home'), photo = $('.hero-photo', home), light = $('.hero-light', home);
+    if (!MV.fx.fine() || home.dataset.bound) return;
+    home.dataset.bound = '1';
+    let raf = 0;
+    home.addEventListener('pointermove', function (e) {
+      if (raf) return;
+      raf = requestAnimationFrame(function () {
+        raf = 0;
+        const r = home.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        const l = $('.hero-light', home), ph = $('.hero-photo', home);
+        if (l) { l.style.setProperty('--hx', (x * 100).toFixed(1) + '%'); l.style.setProperty('--hy', (y * 100).toFixed(1) + '%'); }
+        if (ph) { ph.style.setProperty('--px', ((x - 0.5) * -18).toFixed(1) + 'px'); ph.style.setProperty('--py', ((y - 0.5) * -12).toFixed(1) + 'px'); }
+      });
+    });
+    return photo && light;
+  }
+
+  // Parallax ringan + garis timeline yang terisi saat digulir
+  MV.onScrollFx = function (y) {
+    if (MV.reduceMotion) return;
+    const bg = $('.hero-bg');
+    if (bg && y < innerHeight * 1.2) bg.style.transform = 'translate3d(0,' + (y * 0.32).toFixed(1) + 'px,0)';
+    const tl = $('#exp-list');
+    if (tl && tl.offsetParent) {
+      const r = tl.getBoundingClientRect();
+      const f = Math.max(0, Math.min(1, (innerHeight * 0.65 - r.top) / Math.max(r.height, 1)));
+      tl.style.setProperty('--fill', f.toFixed(3));
+    }
+    const cta = $('.cta-bg');
+    if (cta) {
+      const r = cta.parentElement.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < innerHeight) cta.style.transform = 'translate3d(0,' + ((r.top - innerHeight / 2) * -0.12).toFixed(1) + 'px,0)';
+    }
+  };
 
   // ---------- About ----------
   function about(d) {
-    const p = d.profil || {};
+    const p = d.profil || {}, k = d.kontak || {}, s = d.stats || {};
     const fid = p.foto_tentang_id || p.foto_id;
+    const hl = [];
+    if (s.tahun) hl.push(['briefcase', '<b>' + count(s.tahun, '+') + '</b> Years of Experience']);
+    hl.push(['folder', '<b>' + count(s.proyek || 0) + '</b> Projects Completed']);
+    if (p.status_saat_ini) hl.push(['check-circle', esc(p.status_saat_ini)]);
+    if (s.prestasi) hl.push(['award', '<b>' + count(s.prestasi) + '</b> Achievements &amp; Certificates']);
+    if (d.karya) hl.push(['book-open', '<b>' + count(d.karya) + '</b> Research Papers']);
+    const telp = String(k.telepon || '').replace(/[^\d+]/g, '');
+    const wa = telp ? telp.replace(/^\+/, '').replace(/^0/, '62') : '';
+    const rows = [];
+    const lokasi = k.lokasi || p.lokasi;
+    if (lokasi) rows.push('<li class="info-row">' + I('map-pin') + '<div><small>Location</small><span>' + esc(lokasi) + '</span></div></li>');
+    if (k.email) rows.push('<li class="info-row">' + I('mail') + '<div><small>Email</small><a href="mailto:' + esc(k.email) + '">' + esc(k.email) + '</a></div><button type="button" class="copy-btn" data-copy="' + esc(k.email) + '" aria-label="Copy email" title="Copy email">' + I('copy', 'icon-sm') + '</button></li>');
+    if (k.telepon) rows.push('<li class="info-row">' + I('phone') + '<div><small>Phone</small><a href="tel:' + esc(telp) + '">' + esc(k.telepon) + '</a></div>' +
+      (/^62\d{8,}$/.test(wa) ? '<a class="copy-btn" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp" title="Chat on WhatsApp">' + I('whatsapp', 'icon-sm') + '</a>' : '') + '</li>');
+    if (p.bahasa) rows.push('<li class="info-row">' + I('globe') + '<div><small>Languages</small><span>' + esc(p.bahasa) + '</span></div></li>');
+    $('#about-body').innerHTML =
+      '<div class="about-text"><span class="eyebrow ' + rv(0) + '">About Me</span><h2 class="h2 ' + rv(60) + '" id="about-title">' + (p.judul_tentang ? MV.richText(p.judul_tentang) : 'Who I Am') + '</h2>' +
+      '<div class="' + rv(120) + '">' + MV.paragraphs(p.tentang) + MV.paragraphs(p.kepribadian_profesional) + '</div>' +
+      '<ul class="highlights ' + rv(180) + '">' + hl.map(function (x) { return '<li>' + I(x[0]) + '<span>' + x[1] + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="about-actions ' + rv(240) + '">' + (p.cv_file_id ? '<button type="button" class="btn btn-primary" data-cv2>' + I('file-text', 'icon-sm') + 'View CV</button>' : '') +
+      '<a class="btn btn-secondary" href="#contact">Let\'s Talk ' + I('arrow-right', 'icon-sm') + '</a></div></div>' +
+      '<aside class="card info-panel spot from-right ' + rv(120) + '"><div class="info-photo">' + (fid ? MV.imgTag(fid, 'Photo of ' + (p.nama || ''), 900) : '<div class="initials">' + esc(MV.initials(p.nama)) + '</div>') +
+      (p.status_saat_ini ? '<span class="badge"><span class="dot" aria-hidden="true"></span>' + esc(p.status_saat_ini) + '</span>' : '') + '</div>' +
+      (rows.length ? '<ul class="info-list">' + rows.join('') + '</ul>' : '') + '</aside>';
+    const cv = $('[data-cv2]');
+    if (cv) cv.addEventListener('click', function () { MV.viewer.open({ type: 'pdf', id: p.cv_file_id, title: 'Curriculum Vitae' }); });
     const journey = MV.lines(p.perjalanan_karier).map(function (l) {
-      const x = l.split('|').map(function (s) { return s.trim(); });
+      const x = l.split('|').map(function (t) { return t.trim(); });
       return { tahun: x[0] || '', judul: x[1] || '', ket: x[2] || '' };
     }).slice(0, 5);
-    $('#about-body').innerHTML =
-      '<div class="about-photo ' + rv(0) + '">' + (fid ? MV.imgTag(fid, 'Photo of ' + (p.nama || ''), 900) : '<div class="portrait" style="inset:0;border:0;box-shadow:none;border-radius:0"><div class="initials">' + esc(MV.initials(p.nama)) + '</div></div>') +
-      (p.lokasi ? '<div class="tag glass" style="display:flex;align-items:center;gap:8px">' + I('map-pin', 'icon-sm') + esc(p.lokasi) + '</div>' : '') + '</div>' +
-      '<div class="about-text"><span class="eyebrow ' + rv(0) + '">About Me</span><h2 class="h2 ' + rv(60) + '">Who I Am</h2>' +
-      '<div class="' + rv(120, 'margin-top:20px') + '">' + MV.paragraphs(p.tentang) + MV.paragraphs(p.kepribadian_profesional) + '</div>' +
-      (journey.length ? '<div class="journey ' + rv(180) + '"><div class="journey-title">Career Journey</div><div class="journey-track" style="--n:' + journey.length + '">' +
-        journey.map(function (j) { return '<div class="milestone"><b class="tnum">' + esc(j.tahun) + '</b><strong>' + esc(j.judul) + '</strong>' + (j.ket ? '<span>' + esc(j.ket) + '</span>' : '') + '</div>'; }).join('') + '</div></div>' : '') +
-      '</div>';
+    const jb = $('#journey');
+    jb.hidden = !journey.length;
+    jb.innerHTML = journey.length ? '<div class="journey-title">Career Journey</div><div class="journey-track" style="--n:' + journey.length + '">' +
+      journey.map(function (j) { return '<div class="milestone"><b class="tnum">' + esc(j.tahun) + '</b><strong>' + esc(j.judul) + '</strong>' + (j.ket ? '<span>' + esc(j.ket) + '</span>' : '') + '</div>'; }).join('') + '</div>' : '';
+    if (st.instant) jb.classList.add('is-in');
+  }
+
+  // ---------- Services ----------
+  function services(d) {
+    const all = d.layanan || [];
+    show('services', all.length);
+    $('#svc-grid').innerHTML = all.map(function (s, i) {
+      return '<article class="card card-hover svc-card spot ' + rv(i * 80) + '"><span class="svc-num" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span>' +
+        '<span class="svc-ico">' + I(s.ikon || 'sparkles') + '</span><h3>' + esc(s.judul) + '</h3><p>' + esc(s.deskripsi) + '</p></article>';
+    }).join('');
   }
 
   // ---------- Experience & Education ----------
@@ -100,7 +189,7 @@
     const list = items.filter(function (x) { return st.expType === 'all' || x.jenis === st.expType; });
     $('#exp-list').innerHTML = list.length ? list.map(function (x, i) {
       const range = [fmtYM(x.mulai), x.masih_aktif ? 'Present' : fmtYM(x.selesai)].filter(Boolean).join(' — ');
-      return '<article class="card tl-item ' + rv(i * 50) + '"><div class="tl-head"><div><h3>' + esc(x.posisi) + '</h3><div class="tl-org">' + esc(x.instansi) + (x.lokasi ? ' · ' + esc(x.lokasi) : '') + '</div></div>' +
+      return '<article class="card card-hover tl-item from-left ' + rv(i * 60) + '"><div class="tl-head"><div><h3>' + esc(x.posisi) + '</h3><div class="tl-org">' + esc(x.instansi) + (x.lokasi ? ' · ' + esc(x.lokasi) : '') + '</div></div>' +
         (range ? '<span class="badge tnum">' + esc(range) + '</span>' : '') + '</div>' +
         (x.deskripsi ? '<p>' + esc(x.deskripsi) + '</p>' : '') +
         (x.tag.length ? '<div class="tl-tags">' + x.tag.map(function (t) { return '<span class="chip">' + esc(t) + '</span>'; }).join('') + '</div>' : '') + '</article>';
@@ -108,10 +197,10 @@
     const group = function (jenis, title, ic) {
       const g = edu.filter(function (x) { return x.jenis === jenis; });
       if (!g.length) return '';
-      return '<div class="edu-group ' + rv(0) + '"><h3><span class="icon-tile" style="width:36px;height:36px;border-radius:10px">' + I(ic, 'icon-sm') + '</span>' + title + '</h3><div class="edu-list">' +
+      return '<div class="edu-group from-right ' + rv(0) + '"><h3><span class="icon-tile" style="width:36px;height:36px;border-radius:10px">' + I(ic, 'icon-sm') + '</span>' + title + '</h3><div class="edu-list">' +
         g.map(function (x) {
           const yr = [x.tahun_mulai, x.tahun_selesai].filter(Boolean).join(' — ');
-          return '<div class="card edu-item"><div><h4>' + esc(x.jenjang_program) + '</h4><div class="meta">' + esc(x.institusi) + (x.jurusan ? ' · ' + esc(x.jurusan) : '') + '</div>' +
+          return '<div class="card card-hover edu-item spot"><div><h4>' + esc(x.jenjang_program) + '</h4><div class="meta">' + esc(x.institusi) + (x.jurusan ? ' · ' + esc(x.jurusan) : '') + '</div>' +
             (x.deskripsi ? '<div class="meta" style="margin-top:6px">' + esc(x.deskripsi) + '</div>' : '') + '</div>' + (yr ? '<span class="year">' + esc(yr) + '</span>' : '') + '</div>';
         }).join('') + '</div></div>';
     };
@@ -162,7 +251,7 @@
     const list = all.filter(function (x) { return st.achType === 'all' || x.jenis === st.achType; });
     $('#ach-list').innerHTML = list.map(function (x, i) {
       const ic = x.jenis === 'Sertifikat' ? 'file-text' : x.jenis === 'Penghargaan' ? 'trophy' : 'award';
-      return '<article class="card card-hover ach-card ' + rv((i % 3) * 60) + '">' +
+      return '<article class="card card-hover ach-card spot ' + rv((i % 3) * 70) + '">' +
         '<div class="ach-thumb" style="position:relative">' + I(ic) + (x.file_id ? MV.imgTag(x.file_id, x.judul, 800, 'style="position:absolute;inset:0"') : '') + '</div>' +
         '<div class="ach-body"><span class="badge" style="align-self:flex-start">' + esc(LABEL[x.jenis] || x.jenis) + '</span><h3>' + esc(x.judul) + '</h3>' +
         '<div class="meta">' + [esc(x.penerbit), esc(fmtYM(x.tanggal))].filter(Boolean).join(' · ') + '</div>' +
@@ -173,12 +262,17 @@
   }
 
   // ---------- Projects ----------
+  MV.tallImg = function (img) {                // tangkapan layar tinggi → digulir pelan saat disorot
+    const card = img.closest('.proj-card');
+    if (card && img.naturalWidth && img.naturalHeight / img.naturalWidth > 0.8) card.classList.add('tall');
+  };
   function projectsSection(d) {
     const kat = d.kategori || [], all = d.proyek || [];
     const used = kat.filter(function (k) { return all.some(function (p) { return p.kategori_id === k.id; }); });
     if (st.projCat !== 'all' && !used.some(function (k) { return k.id === st.projCat; })) st.projCat = 'all';
     $('#proj-filter').innerHTML = used.length > 1 ? [{ id: 'all', nama: 'All' }].concat(used).map(function (k) {
-      return '<button type="button" class="pill" data-cat="' + esc(k.id) + '" aria-pressed="' + (st.projCat === k.id) + '">' + esc(k.nama) + '</button>';
+      const n = k.id === 'all' ? all.length : all.filter(function (p) { return p.kategori_id === k.id; }).length;
+      return '<button type="button" class="pill" data-cat="' + esc(k.id) + '" aria-pressed="' + (st.projCat === k.id) + '">' + esc(k.nama) + ' <span class="count">' + n + '</span></button>';
     }).join('') : '';
     projectsGrid();
     const counts = used.map(function (k) { return { label: k.nama, value: all.filter(function (p) { return p.kategori_id === k.id; }).length }; });
@@ -190,47 +284,67 @@
     }
   }
 
-  function projectsGrid() {
+  function projectsList() {
     const d = st.d, kat = {};
     (d.kategori || []).forEach(function (k) { kat[k.id] = k.nama; });
     const q = st.projQ.toLowerCase().trim();
-    const list = (d.proyek || []).filter(function (p) {
+    return { kat: kat, list: (d.proyek || []).filter(function (p) {
       if (st.projCat !== 'all' && p.kategori_id !== st.projCat) return false;
       if (!q) return true;
       return (p.judul + ' ' + p.ringkasan + ' ' + p.teknologi.join(' ') + ' ' + (kat[p.kategori_id] || '')).toLowerCase().indexOf(q) > -1;
-    });
+    }) };
+  }
+
+  function projectsGrid() {
+    const d = st.d, x = projectsList(), kat = x.kat, list = x.list;
     const shown = list.slice(0, st.projShown);
+    const anim = st.projAnim && !MV.reduceMotion;
     $('#proj-grid').innerHTML = shown.length ? shown.map(function (p, i) {
-      return '<article class="card card-hover proj-card ' + rv((i % 3) * 60) + '">' +
-        '<div class="proj-cover">' + (p.gambar_id ? MV.imgTag(p.gambar_id, p.judul, 900) : MV.coverPh(p.judul, p.id)) +
-        (p.unggulan ? '<span class="badge badge-solid">' + I('star', 'icon-sm') + 'Featured</span>' : '') + '</div>' +
-        '<div class="proj-body">' + (kat[p.kategori_id] ? '<span class="badge" style="align-self:flex-start">' + esc(kat[p.kategori_id]) + '</span>' : '') +
+      const tech = p.teknologi.slice(0, 4).map(esc).join(' <i>/</i> ') + (p.teknologi.length > 4 ? ' <i>+' + (p.teknologi.length - 4) + '</i>' : '');
+      return '<article class="card proj-card spot ' + (anim ? 'enter" style="--i:' + i + '"' : rv((i % 3) * 80) + '"') + ' data-tilt>' +
+        '<div class="glare" aria-hidden="true"></div>' +
+        '<div class="proj-cover">' + (p.gambar_id ? MV.imgTag(p.gambar_id, p.judul, 1000, 'onload="MV.tallImg(this)"') : MV.coverPh(p.judul, p.id)) +
+        (p.unggulan ? '<span class="badge badge-solid">' + I('star', 'icon-sm') + 'Featured</span>' : '') +
+        '<div class="proj-overlay" aria-hidden="true"><span class="btn btn-primary btn-sm">View Project ' + I('arrow-right', 'icon-sm') + '</span>' + (p.tahun ? '<span class="yr">' + esc(p.tahun) + '</span>' : '') + '</div></div>' +
+        '<div class="proj-body">' + (kat[p.kategori_id] ? '<span class="proj-cat">' + esc(kat[p.kategori_id]) + '</span>' : '') +
         '<h3><a class="stretched" href="proyek.html?slug=' + encodeURIComponent(p.slug) + '">' + esc(p.judul) + '</a></h3>' +
         (p.ringkasan ? '<p>' + esc(p.ringkasan) + '</p>' : '') +
-        '<div class="proj-foot"><div class="tech-chips">' + p.teknologi.slice(0, 3).map(function (t) { return '<span class="chip">' + esc(t) + '</span>'; }).join('') + '</div>' +
+        '<div class="proj-foot"><div class="tech-line" title="' + esc(p.teknologi.join(', ')) + '">' + (tech || '&nbsp;') + '</div>' +
         MV.likes.button('proyek', p.id, (d.likes || {})['proyek:' + p.id] || 0, 'on-top') + '</div></div></article>';
     }).join('') : '';
     $('#proj-empty').hidden = !!shown.length;
     $('#proj-more').hidden = list.length <= st.projShown;
+    $('#proj-all').hidden = list.length <= st.projShown;
     $('#proj-count').textContent = list.length ? 'Showing ' + shown.length + ' of ' + list.length : '';
-    if (!st.instant) MV.reveal($('#proj-grid'));
+    st.projAnim = false;
+    if (!st.instant && !anim) MV.reveal($('#proj-grid'));
   }
 
-  // ---------- Services & Process ----------
-  function services(d) {
-    const all = d.layanan || [];
-    show('services', all.length);
-    $('#svc-grid').innerHTML = all.map(function (s, i) {
-      return '<article class="card card-hover svc-card ' + rv(i * 60) + '"><span class="icon-tile">' + I(s.ikon || 'sparkles') + '</span><h3>' + esc(s.judul) + '</h3><p>' + esc(s.deskripsi) + '</p></article>';
-    }).join('');
+  // Ganti isi grid dengan animasi keluar → masuk bertahap
+  function swapProjects(mutate) {
+    const grid = $('#proj-grid');
+    mutate();
+    st.instant = false;
+    if (MV.reduceMotion) { projectsGrid(); return; }
+    grid.classList.add('is-swapping');
+    setTimeout(function () { grid.classList.remove('is-swapping'); st.projAnim = true; projectsGrid(); }, 170);
   }
+
+  // ---------- Articles & Research (3 terbaru) ----------
+  function writing(d) {
+    const all = d.tulisan || [];
+    show('writing', all.length);
+    $('#writing-grid').innerHTML = all.map(function (m, i) { return MV.site.postCard(m, d.likes || {}, rv((i % 3) * 80)); }).join('');
+  }
+
+  // ---------- Process ----------
   function process(d) {
     const all = d.proses || [];
     show('process', all.length);
     const ol = $('#proc-list');
     ol.style.setProperty('--n', Math.min(all.length, 6));
     ol.innerHTML = all.map(function (s, i) {
-      return '<li class="step ' + rv(i * 80) + '"><span class="step-num tnum" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span><div><h3>' + esc(s.judul) + '</h3><p>' + esc(s.deskripsi) + '</p></div></li>';
+      return '<li class="step ' + rv(i * 120) + '"><span class="step-num tnum" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span><div><h3>' + esc(s.judul) + '</h3><p>' + esc(s.deskripsi) + '</p></div></li>';
     }).join('');
   }
 
@@ -262,7 +376,14 @@
     st.timer = setInterval(function () { if (!st.paused && document.visibilityState === 'visible') goTesti(st.testi + 1); }, 6000);
   }
 
-  // ---------- Contact ----------
+  // ---------- Ajakan & kontak ----------
+  function cta(d) {
+    const s = d.pengaturan || {};
+    if (s.cta_judul) $('#cta-title').textContent = s.cta_judul;
+    if (s.cta_teks) $('#cta-body p').textContent = s.cta_teks;
+    const img = $('.cta-bg img');
+    if (img && s.cta_bg_id) { img.src = MV.img(s.cta_bg_id, 2000); img.dataset.altSrc = MV.imgAlt(s.cta_bg_id, 2000); img.onerror = function () { MV.imgFallback(this); }; }
+  }
   function contact(d) {
     const k = d.kontak || {};
     const rows = [];
@@ -283,10 +404,11 @@
     const p = d.profil || {};
     document.title = (p.nama ? p.nama + ' — ' : '') + ((d.pengaturan || {}).judul_situs || 'MyVerse');
     MV.site.setMeta({ profil: p, kontak: d.kontak, pengaturan: d.pengaturan });
-    [hero, about, experience, skills, achievements, projectsSection, services, process, testimonials, contact].forEach(function (fn) {
+    [hero, about, services, projectsSection, experience, skills, achievements, writing, process, testimonials, cta, contact].forEach(function (fn) {
       try { fn(d); } catch (e) { console.error(fn.name, e); }
     });
     MV.reveal(main);
+    if (MV.onScrollFx) MV.onScrollFx(window.scrollY);
   }
 
   function updateLikes(likes) {
@@ -299,7 +421,8 @@
   }
 
   function errorState(err) {
-    $('#home').innerHTML = '<div class="container"><div class="card config-banner"><div class="icon-tile" style="margin:0 auto 16px">' + I('alert') + '</div>' +
+    $('#home').innerHTML = '<div class="hero-bg" aria-hidden="true"><img src="assets/hero-bg.svg" alt=""></div><div class="hero-shade" aria-hidden="true"></div>' +
+      '<div class="container"><div class="card config-banner"><div class="icon-tile" style="margin:0 auto 16px">' + I('alert') + '</div>' +
       '<h1 class="h3">We couldn\'t load this portfolio</h1><p class="muted" style="margin:10px 0 20px">' + esc((err && err.message) || 'Please check your connection.') + '</p>' +
       '<button class="btn btn-primary" type="button" onclick="location.reload()">' + I('refresh', 'icon-sm') + 'Try again</button></div></div>';
   }
@@ -319,19 +442,30 @@
   }
 
   // ---------- Interaksi (delegasi event) ----------
-  main.addEventListener('click', function (e) {
+  main.addEventListener('click', async function (e) {
     const t = e.target;
     let b;
-    if ((b = t.closest('[data-exp]'))) { st.expType = b.dataset.exp; st.instant = false; experience(st.d); MV.reveal($('#experience')); }
+    if ((b = t.closest('[data-exp]'))) { st.expType = b.dataset.exp; st.instant = false; experience(st.d); MV.reveal($('#experience')); MV.onScrollFx(window.scrollY); }
     else if ((b = t.closest('[data-ach]'))) { st.achType = b.dataset.ach; st.instant = false; achievements(st.d); MV.reveal($('#achievements')); }
     else if ((b = t.closest('[data-skill]'))) {
       st.skillCat = b.dataset.skill; st.instant = false; skills(st.d);
       requestAnimationFrame(function () { MV.$$('#skill-bars .bar > i').forEach(function (i) { i.style.width = i.dataset.w + '%'; }); });
     }
-    else if ((b = t.closest('[data-cat]'))) { st.projCat = b.dataset.cat; st.projShown = Math.max(3, Number(st.d.pengaturan.jumlah_proyek_awal) || 6); st.instant = false; projectsSection(st.d); }
+    else if ((b = t.closest('[data-cat]'))) {
+      const cat = b.dataset.cat;
+      MV.$$('#proj-filter .pill').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      swapProjects(function () { st.projCat = cat; st.projShown = Math.max(3, Number(st.d.pengaturan.jumlah_proyek_awal) || 6); });
+    }
     else if ((b = t.closest('[data-view]'))) { MV.viewer.open({ type: 'pdf', id: b.dataset.view, title: b.dataset.title }); }
     else if ((b = t.closest('[data-testi]'))) { goTesti(Number(b.dataset.testi)); autoplay(); }
-    else if (t.closest('#proj-more')) { st.projShown += 6; st.instant = false; projectsGrid(); }
+    else if ((b = t.closest('[data-copy]'))) {
+      const ok = await MV.copy(b.dataset.copy);
+      b.classList.toggle('ok', ok); b.innerHTML = I(ok ? 'check' : 'copy', 'icon-sm');
+      MV.toast(ok ? 'Email copied to clipboard.' : 'Could not copy — please copy it manually.', ok ? 'ok' : 'err', 2500);
+      setTimeout(function () { b.classList.remove('ok'); b.innerHTML = I('copy', 'icon-sm'); }, 1800);
+    }
+    else if (t.closest('#proj-more')) { st.projAnim = true; st.projShown += 6; st.instant = false; projectsGrid(); }
+    else if (t.closest('#proj-all')) { st.projAnim = true; st.projShown = projectsList().list.length; st.instant = false; projectsGrid(); }
     else if (t.closest('#testi-prev')) { goTesti(st.testi - 1); autoplay(); }
     else if (t.closest('#testi-next')) { goTesti(st.testi + 1); autoplay(); }
   });
@@ -343,8 +477,9 @@
     n.focus(); n.click();
   });
   $('#proj-search').addEventListener('input', MV.debounce(function (e) {
-    st.projQ = e.target.value; st.projShown = Math.max(3, Number(st.d.pengaturan.jumlah_proyek_awal) || 6); st.instant = false; projectsGrid();
-  }, 160));
+    const v = e.target.value;
+    swapProjects(function () { st.projQ = v; st.projShown = Math.max(3, Number(st.d.pengaturan.jumlah_proyek_awal) || 6); });
+  }, 180));
   const testiBox = $('#testi-box');
   testiBox.addEventListener('mouseenter', function () { st.paused = true; });
   testiBox.addEventListener('mouseleave', function () { st.paused = false; });

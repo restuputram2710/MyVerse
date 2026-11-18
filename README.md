@@ -1,6 +1,6 @@
-# MyVerse — Portofolio Pribadi
+# MyVerse — Portofolio Pribadi (v1.1.0)
 
-Situs portofolio satu halaman (landing page) + blog + dashboard admin.
+Situs portofolio satu halaman + blog & karya ilmiah + dashboard admin, bertema **"Midnight Blue"** (navy + biru) dengan animasi interaktif.
 
 - **Frontend:** HTML/CSS/JS murni (tanpa framework), di-host di GitHub Pages.
 - **Backend:** Google Apps Script sebagai REST API JSON, dengan Google Sheets sebagai database dan Google Drive sebagai penyimpanan berkas.
@@ -11,25 +11,25 @@ Kode backend **tidak** disimpan di repository ini. Ia hidup di proyek Apps Scrip
 
 | Berkas | Isi |
 |---|---|
-| `index.html` | Landing page dengan 12 bagian: Home, About, Experience & Education, Skills, Achievements, Projects, Services, Process, Testimonials, Contact, Footer |
+| `index.html` | Landing page: Hero, About, Services, Projects, Experience & Education, Skills, Honors, Articles & Research, Process, Testimonials, Let's Work Together, Contact |
 | `proyek.html?slug=…` | Detail proyek |
-| `blog.html` | Daftar artikel (cari, filter tag, halaman) |
-| `artikel.html?slug=…` | Isi artikel |
+| `blog.html` | Artikel & karya ilmiah (tab All / Articles / Research, cari, filter topik) |
+| `artikel.html?slug=…` | Isi artikel, atau karya ilmiah dengan abstrak, pratinjau PDF/Word, Download (opsional), dan Cite |
 | `admin.html` | Dashboard pemilik (login sandi). Sengaja tidak ditautkan dari menu publik |
 
 ## Struktur
 
 ```
 index.html  proyek.html  blog.html  artikel.html  admin.html  robots.txt
-assets/favicon.svg
-css/style.css      ← token desain "Aether Violet" (terang & gelap) + halaman publik
+assets/favicon.svg  assets/hero-bg.svg  assets/cta-bg.svg   ← ilustrasi latar bawaan
+css/style.css      ← token desain "Midnight Blue" (gelap & terang) + halaman publik
 css/admin.css      ← dashboard admin
 js/config.js       ← SATU-SATUNYA yang perlu diisi: URL /exec Apps Script
-js/icons.js        ← ikon SVG garis (gaya Lucide)
-js/core.js         ← API client (batch, dedupe, cache SWR), tema, util, grafik SVG
-js/site.js         ← navigasi, footer, suka (like)
-js/home.js         ← landing page
-js/pages.js        ← detail proyek, blog, artikel
+js/icons.js        ← ikon SVG garis
+js/core.js         ← API client (batch, dedupe, cache SWR), tema, efek interaktif, grafik SVG
+js/site.js         ← navigasi, footer, progres gulir, kartu tulisan, suka
+js/home.js         ← landing page (animasi hero, kartu proyek 3D, timeline)
+js/pages.js        ← detail proyek, blog, artikel & karya ilmiah
 js/admin.js        ← dashboard admin
 ```
 
@@ -46,6 +46,7 @@ URL ini bukan rahasia. Tidak ada token, kunci, atau sandi apa pun di repository 
 ## Memperbarui
 
 ```bash
+git pull
 git add .
 git commit -m "keterangan perubahan"
 git push
@@ -55,6 +56,6 @@ Setelah mengubah CSS/JS, naikkan angka `?v=` pada tag `<link>`/`<script>` di ber
 
 ## Catatan
 
-- Situs memuat `noindex` dan `robots.txt` melarang mesin pencari (sesuai PRD: tidak muncul di hasil pencarian).
-- Langkah pemasangan lengkap ada di `PANDUAN-INSTALASI.md`.
-- Font: Plus Jakarta Sans (judul) dan Inter (isi) dari Google Fonts, dengan cadangan font sistem.
+- Situs memuat `noindex` dan `robots.txt` melarang mesin pencari (sesuai PRD).
+- Animasi otomatis dimatikan bagi pengunjung yang mengaktifkan "kurangi gerakan" di perangkatnya.
+- Langkah pemasangan baru: `PANDUAN-INSTALASI.md`. Update dari v1.0.x: `PANDUAN-UPDATE-v1.1.md`.

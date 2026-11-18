@@ -7,7 +7,7 @@
   const MV = (window.MV = window.MV || {});
   const cfg = (MV.cfg = window.APP_CONFIG || {});
   MV.ready = !!cfg.GAS_URL && !/GANTI|XXXX/i.test(cfg.GAS_URL);
-  MV.VERSION = '1.0.0';
+  MV.VERSION = '1.1.0';
 
   // ---------- Utilitas ----------
   MV.esc = function (s) {
@@ -197,6 +197,16 @@
   MV.img = function (id, w) { return id ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + (w || 1200) : ''; };
   MV.imgAlt = function (id, w) { return 'https://lh3.googleusercontent.com/d/' + encodeURIComponent(id) + '=w' + (w || 1200); };
   MV.preview = function (id) { return 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview'; };
+  MV.download = function (id) { return 'https://drive.google.com/uc?export=download&id=' + encodeURIComponent(id); };
+  MV.copy = async function (text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (x) { ok = false; }
+      t.remove(); return ok;
+    }
+  };
   MV.imgTag = function (id, alt, w, extra) {
     if (!id) return '';
     return '<img src="' + MV.img(id, w) + '" alt="' + MV.esc(alt || '') + '" loading="lazy" decoding="async" ' +
@@ -207,7 +217,7 @@
     el.onerror = null;
     el.style.visibility = 'hidden';
   };
-  const PALET = [['#6B4EFF', '#A594FF'], ['#5A3BEB', '#8B72FF'], ['#7C5CFF', '#C4B5FD'], ['#4B32D6', '#8B72FF'], ['#6F55FF', '#B3A3FF']];
+  const PALET = [['#1A6AE5', '#5AA2FF'], ['#0E4BAA', '#3D86F5'], ['#1D72F2', '#7CC0FF'], ['#123E85', '#4C8DFF'], ['#0B5CD6', '#6FB1FF']];
   MV.coverPh = function (title, seed) {
     const p = PALET[MV.hash(seed || title) % PALET.length];
     return '<div class="cover-ph" style="--c1:' + p[0] + ';--c2:' + p[1] + '" aria-hidden="true"><span>' + MV.esc(MV.initials(title)) + '</span></div>';
@@ -305,7 +315,13 @@
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   MV.reduceMotion = reduce;
   let io = null;
+  // Setelah animasi masuk selesai, kelas .reveal dilepas agar transisi/efek milik elemen (hover, miring 3D) tidak tertunda
+  function lepas(el) {
+    const d = parseFloat(getComputedStyle(el).getPropertyValue('--d')) || 0;
+    setTimeout(function () { el.classList.remove('reveal', 'from-left', 'from-right', 'zoom'); }, d + 760);
+  }
   MV.reveal = function (root) {
+    MV.$$('.reveal.is-in', root).forEach(lepas);
     const els = MV.$$('.reveal:not(.is-in)', root);
     if (reduce || !('IntersectionObserver' in window)) { els.forEach(function (el) { el.classList.add('is-in'); onIn(el); }); return; }
     if (!io) io = new IntersectionObserver(function (entries) {
@@ -314,6 +330,7 @@
     els.forEach(function (el) { io.observe(el); });
   };
   function onIn(el) {
+    lepas(el);
     MV.$$('[data-count]', el).forEach(MV.countUp);
     MV.$$('.bar > i[data-w]', el).forEach(function (b) { b.style.width = b.dataset.w + '%'; });
   }
@@ -330,10 +347,47 @@
     })(t0);
   };
 
+  // ---------- Efek interaktif: sorotan kursor, kemiringan 3D, tombol magnetik ----------
+  MV.fx = {
+    fine: function () { return !reduce && window.matchMedia && matchMedia('(pointer: fine)').matches; },
+    bind: function () {
+      if (MV.fx.bound || !MV.fx.fine()) return;
+      MV.fx.bound = true;
+      let raf = 0, last = null;
+      document.addEventListener('pointermove', function (e) {
+        last = e;
+        if (raf) return;
+        raf = requestAnimationFrame(function () {
+          raf = 0;
+          const t = last.target;
+          const spot = t.closest && t.closest('.spot');
+          if (spot) { const r = spot.getBoundingClientRect(); spot.style.setProperty('--mx', (last.clientX - r.left) + 'px'); spot.style.setProperty('--my', (last.clientY - r.top) + 'px'); }
+          const tilt = t.closest && t.closest('[data-tilt]');
+          if (tilt) {
+            const r = tilt.getBoundingClientRect(), x = (last.clientX - r.left) / r.width, y = (last.clientY - r.top) / r.height;
+            tilt.classList.add('tilting');
+            tilt.style.setProperty('--ry', ((x - 0.5) * 8).toFixed(2) + 'deg');
+            tilt.style.setProperty('--rx', ((0.5 - y) * 6).toFixed(2) + 'deg');
+            tilt.style.setProperty('--gx', (x * 100).toFixed(1) + '%');
+            tilt.style.setProperty('--gy', (y * 100).toFixed(1) + '%');
+          }
+          const mag = t.closest && t.closest('[data-magnetic]');
+          if (mag) { const r = mag.getBoundingClientRect(); mag.style.transform = 'translate(' + ((last.clientX - r.left - r.width / 2) * 0.18).toFixed(1) + 'px,' + ((last.clientY - r.top - r.height / 2) * 0.28).toFixed(1) + 'px)'; }
+        });
+      }, { passive: true });
+      document.addEventListener('pointerout', function (e) {
+        const tilt = e.target.closest && e.target.closest('[data-tilt]');
+        if (tilt && !tilt.contains(e.relatedTarget)) { tilt.classList.remove('tilting'); tilt.style.setProperty('--rx', '0deg'); tilt.style.setProperty('--ry', '0deg'); }
+        const mag = e.target.closest && e.target.closest('[data-magnetic]');
+        if (mag && !mag.contains(e.relatedTarget)) mag.style.transform = '';
+      });
+    }
+  };
+
   // ---------- Grafik SVG ringan (tanpa pustaka) ----------
   MV.colors = function () {
     const cs = getComputedStyle(document.documentElement);
-    return [1, 2, 3, 4, 5, 6].map(function (i) { return cs.getPropertyValue('--chart-' + i).trim() || '#6B4EFF'; });
+    return [1, 2, 3, 4, 5, 6].map(function (i) { return cs.getPropertyValue('--chart-' + i).trim() || '#1A6AE5'; });
   };
   MV.charts = {
     donut: function (items, o) {

@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="googlebot" content="noindex, nofollow">
-  <meta name="description" content="Personal portfolio — profile, experience, skills, achievements, and projects.">
-  <meta name="theme-color" content="#6B4EFF">
+  <meta name="description" content="Personal portfolio — profile, services, projects, experience, research, and writing.">
+  <meta name="theme-color" content="#0A1020">
   <title>MyVerse — Portfolio</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <script>
@@ -22,7 +22,8 @@
   <link rel="preconnect" href="https://script.google.com">
   <link rel="preconnect" href="https://drive.google.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=1.0.1">
+  <link rel="preload" href="assets/hero-bg.svg" as="image">
+  <link rel="stylesheet" href="css/style.css?v=1.1.0">
 </head>
 <body data-page="home">
   <div id="chrome-top"></div>
@@ -30,32 +31,69 @@
   <main id="main">
     <!-- 1. Home -->
     <section id="home" class="hero" aria-label="Introduction">
+      <div class="hero-bg" aria-hidden="true"><img src="assets/hero-bg.svg" alt=""></div>
+      <div class="hero-shade" aria-hidden="true"></div>
       <div class="container hero-grid" aria-hidden="true">
         <div>
-          <div class="sk" style="width:120px;height:30px;border-radius:99px"></div>
+          <div class="sk" style="width:110px;height:22px"></div>
           <div class="sk sk-title"></div>
-          <div class="sk sk-line" style="width:60%;height:26px"></div>
+          <div class="sk sk-line" style="width:60%;height:28px"></div>
           <div class="sk sk-line" style="width:90%"></div>
           <div class="sk sk-line" style="width:75%"></div>
-          <div style="display:flex;gap:12px;margin-top:28px"><div class="sk" style="width:160px;height:44px"></div><div class="sk" style="width:130px;height:44px"></div></div>
+          <div style="display:flex;gap:12px;margin-top:28px"><div class="sk" style="width:160px;height:46px"></div><div class="sk" style="width:140px;height:46px"></div></div>
         </div>
-        <div class="sk" style="aspect-ratio:1/1.05;border-radius:28px;max-width:440px;width:100%;margin-left:auto"></div>
+        <div></div>
       </div>
     </section>
 
     <!-- 2. About -->
     <section id="about" class="section" aria-labelledby="about-title">
-      <h2 id="about-title" class="sr-only">About</h2>
-      <div class="container about-grid" id="about-body">
-        <div class="sk" style="aspect-ratio:4/5;border-radius:24px"></div>
-        <div><div class="sk sk-title" style="width:40%"></div><div class="sk sk-line"></div><div class="sk sk-line"></div><div class="sk sk-line" style="width:80%"></div></div>
+      <div class="container">
+        <div class="about-grid" id="about-body">
+          <div><div class="sk" style="width:120px;height:16px"></div><div class="sk sk-title" id="about-title"></div><div class="sk sk-line"></div><div class="sk sk-line"></div><div class="sk sk-line" style="width:80%"></div></div>
+          <div class="sk" style="height:420px;border-radius:16px"></div>
+        </div>
+        <div class="journey reveal" id="journey" hidden></div>
       </div>
     </section>
 
-    <!-- 3–4. Experience & Education -->
+    <!-- 3. Services -->
+    <section id="services" class="section section-tint" aria-labelledby="svc-title">
+      <div class="container">
+        <div class="section-head center reveal"><div><span class="eyebrow">My Services</span><h2 class="h2" id="svc-title">What I Can Do For You</h2><span class="title-bar" aria-hidden="true"></span></div></div>
+        <div class="grid-4" id="svc-grid"><div class="sk sk-card" style="height:220px"></div><div class="sk sk-card" style="height:220px"></div><div class="sk sk-card" style="height:220px"></div><div class="sk sk-card" style="height:220px"></div></div>
+      </div>
+    </section>
+
+    <!-- 4. Projects -->
+    <section id="projects" class="section" aria-labelledby="proj-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <div><span class="eyebrow">Featured Projects</span><h2 class="h2" id="proj-title">Selected Work</h2>
+            <p class="lead">Websites, learning media, digital products, and creative work.</p></div>
+          <button type="button" class="link-arrow" id="proj-all" hidden>View All Projects <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+        </div>
+        <div class="toolbar reveal">
+          <div class="pill-row scroll-x" id="proj-filter" role="group" aria-label="Filter projects by category"></div>
+          <div class="search-box"><label for="proj-search" class="sr-only">Search projects</label>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="proj-search" class="input" type="search" placeholder="Search projects…" autocomplete="off"></div>
+        </div>
+        <div class="grid-3 proj-grid" id="proj-grid" aria-live="polite"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div>
+        <div class="empty" id="proj-empty" hidden>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <p><strong>No matching projects.</strong></p><p style="font-size:14px">Try another keyword or category.</p>
+        </div>
+        <div class="more-row"><button type="button" class="btn btn-secondary" id="proj-more" hidden>Load more</button></div>
+        <p class="center muted" id="proj-count" style="font-size:13px;margin-top:12px"></p>
+        <div class="card card-pad breakdown reveal" id="proj-breakdown" hidden></div>
+      </div>
+    </section>
+
+    <!-- 5. Experience & Education -->
     <section id="experience" class="section section-tint" aria-labelledby="exp-title">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head reveal">
           <div><span class="eyebrow">Experience</span><h2 class="h2" id="exp-title">Experience &amp; Education</h2>
             <p class="lead">Work, teaching, organizations, and the learning path behind them.</p></div>
         </div>
@@ -69,25 +107,25 @@
       </div>
     </section>
 
-    <!-- 5. Skills & Expertise -->
+    <!-- 6. Skills & Expertise -->
     <section id="skills" class="section" aria-labelledby="skills-title">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head reveal">
           <div><span class="eyebrow">Tools &amp; Skills</span><h2 class="h2" id="skills-title">My Expertise</h2></div>
           <div class="seg scroll-x" id="skill-tabs" role="tablist" aria-label="Skill categories"></div>
         </div>
         <div class="skills-grid">
-          <div class="card card-pad" id="skill-panel" role="tabpanel" aria-labelledby="skill-panel-title">
+          <div class="card card-pad spot reveal" id="skill-panel" role="tabpanel" aria-labelledby="skill-panel-title">
             <h3 class="h3" id="skill-panel-title">Core proficiency</h3>
             <p class="muted" style="margin:4px 0 22px;font-size:14.5px">Self-assessed level for each skill.</p>
             <div id="skill-bars"><div class="sk sk-line"></div><div class="sk sk-line"></div><div class="sk sk-line"></div></div>
           </div>
           <div style="display:grid;gap:24px">
-            <div class="card card-pad" id="skill-radar-card">
+            <div class="card card-pad spot reveal" id="skill-radar-card" style="--d:80ms">
               <h3 class="h3" id="skill-radar-title">Skills at a glance</h3>
               <div class="chart-box" id="skill-radar" style="margin-top:8px"></div>
             </div>
-            <div class="card card-pad" id="tools-card">
+            <div class="card card-pad spot reveal" id="tools-card" style="--d:140ms">
               <h3 class="h3">Tools I use</h3>
               <div class="tools" id="tools"></div>
             </div>
@@ -96,10 +134,10 @@
       </div>
     </section>
 
-    <!-- 6. Achievements -->
+    <!-- 7. Achievements -->
     <section id="achievements" class="section section-tint" aria-labelledby="ach-title">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head reveal">
           <div><span class="eyebrow">Recognition</span><h2 class="h2" id="ach-title">Honors &amp; Certificates</h2></div>
           <div class="pill-row scroll-x" id="ach-filter" role="group" aria-label="Filter achievements"></div>
         </div>
@@ -107,51 +145,31 @@
       </div>
     </section>
 
-    <!-- 7. Projects -->
-    <section id="projects" class="section" aria-labelledby="proj-title">
+    <!-- 8. Articles & Research -->
+    <section id="writing" class="section" aria-labelledby="writing-title" hidden>
       <div class="container">
-        <div class="section-head">
-          <div><span class="eyebrow">Featured Projects</span><h2 class="h2" id="proj-title">Selected Work</h2>
-            <p class="lead">Websites, learning media, digital products, and creative work.</p></div>
+        <div class="section-head reveal">
+          <div><span class="eyebrow">Articles &amp; Research</span><h2 class="h2" id="writing-title">Latest Writing</h2>
+            <p class="lead">Articles, research papers, and scientific work.</p></div>
+          <a class="link-arrow" href="blog.html">View All <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
         </div>
-        <div class="toolbar">
-          <div class="pill-row scroll-x" id="proj-filter" role="group" aria-label="Filter projects by category"></div>
-          <div class="search-box"><label for="proj-search" class="sr-only">Search projects</label>
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="proj-search" class="input" type="search" placeholder="Search projects…" autocomplete="off"></div>
-        </div>
-        <div class="grid-3" id="proj-grid" aria-live="polite"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div>
-        <div class="empty" id="proj-empty" hidden>
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <p><strong>No matching projects.</strong></p><p style="font-size:14px">Try another keyword or category.</p>
-        </div>
-        <div class="more-row"><button type="button" class="btn btn-secondary" id="proj-more" hidden>Load more</button></div>
-        <p class="center muted" id="proj-count" style="font-size:13px;margin-top:12px"></p>
-        <div class="card card-pad breakdown" id="proj-breakdown" hidden></div>
-      </div>
-    </section>
-
-    <!-- 8. Services -->
-    <section id="services" class="section section-tint" aria-labelledby="svc-title">
-      <div class="container">
-        <div class="section-head"><div><span class="eyebrow">Services</span><h2 class="h2" id="svc-title">What I Do</h2></div></div>
-        <div class="grid-4" id="svc-grid"><div class="sk sk-card" style="height:200px"></div><div class="sk sk-card" style="height:200px"></div></div>
+        <div class="grid-3" id="writing-grid"></div>
       </div>
     </section>
 
     <!-- 9. My Process -->
-    <section id="process" class="section" aria-labelledby="proc-title">
+    <section id="process" class="section section-tint" aria-labelledby="proc-title">
       <div class="container">
-        <div class="section-head center"><div><span class="eyebrow">My Process</span><h2 class="h2" id="proc-title">A Simple, Effective Process</h2></div></div>
-        <ol class="process" id="proc-list"></ol>
+        <div class="section-head center reveal"><div><span class="eyebrow">My Process</span><h2 class="h2" id="proc-title">A Simple, Effective Process</h2><span class="title-bar" aria-hidden="true"></span></div></div>
+        <ol class="process reveal" id="proc-list"></ol>
       </div>
     </section>
 
     <!-- 10. Testimonials -->
-    <section id="testimonials" class="section section-tint" aria-labelledby="testi-title">
+    <section id="testimonials" class="section" aria-labelledby="testi-title">
       <div class="container">
-        <h2 class="sr-only" id="testi-title">Testimonials</h2>
-        <div class="card testi" id="testi-box" aria-roledescription="carousel" aria-label="Testimonials">
+        <div class="section-head center reveal"><div><span class="eyebrow">Testimonials</span><h2 class="h2" id="testi-title">What People Say</h2><span class="title-bar" aria-hidden="true"></span></div></div>
+        <div class="card testi spot reveal" id="testi-box" aria-roledescription="carousel" aria-label="Testimonials">
           <svg class="quote-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>
           <div id="testi-slides" aria-live="polite"></div>
           <div class="testi-nav" id="testi-nav">
@@ -163,14 +181,24 @@
       </div>
     </section>
 
-    <!-- 11. Contact -->
+    <!-- 11. Let's Work Together -->
+    <section id="cta" class="cta-band" aria-labelledby="cta-title">
+      <div class="cta-bg" aria-hidden="true"><img src="assets/cta-bg.svg" alt=""></div>
+      <div class="container reveal" id="cta-body">
+        <h2 id="cta-title">Let's Work Together</h2>
+        <p>Have a project in mind? I'd love to hear about it. Let's create something amazing together.</p>
+        <a class="btn btn-primary" href="#contact" data-magnetic>Get In Touch <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+      </div>
+    </section>
+
+    <!-- 12. Contact -->
     <section id="contact" class="section" aria-labelledby="contact-title">
       <div class="container">
-        <div class="contact-panel">
+        <div class="contact-panel reveal">
           <div class="contact-info">
-            <span class="eyebrow" style="margin:0">Let's Work Together</span>
+            <span class="eyebrow" style="margin:0">Get In Touch</span>
             <h2 class="h2" id="contact-title">Have a Project in Mind?</h2>
-            <p class="muted" style="margin-bottom:10px">I'm open to collaborations, teaching projects, and freelance work. Send a message and I'll reply by email.</p>
+            <p class="muted" style="margin-bottom:10px">I'm open to collaborations, teaching projects, research, and freelance work. Send a message and I'll reply by email.</p>
             <div id="contact-rows" style="display:grid;gap:14px"></div>
             <svg class="plane" viewBox="0 0 160 110" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M150 8 70 52l30 10 50-54ZM100 62l-6 34 18-24"/><path d="M70 52 6 104" stroke-dasharray="4 6"/></svg>
           </div>
@@ -191,13 +219,13 @@
     </section>
   </main>
 
-  <!-- 12. Footer -->
+  <!-- Footer -->
   <div id="chrome-foot"></div>
 
-  <script src="js/config.js?v=1.0.1"></script>
-  <script src="js/icons.js?v=1.0.1"></script>
-  <script src="js/core.js?v=1.0.1"></script>
-  <script src="js/site.js?v=1.0.1"></script>
-  <script src="js/home.js?v=1.0.1"></script>
+  <script src="js/config.js?v=1.1.0"></script>
+  <script src="js/icons.js?v=1.1.0"></script>
+  <script src="js/core.js?v=1.1.0"></script>
+  <script src="js/site.js?v=1.1.0"></script>
+  <script src="js/home.js?v=1.1.0"></script>
 </body>
 </html>

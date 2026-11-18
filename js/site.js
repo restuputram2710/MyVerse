@@ -38,14 +38,16 @@
           return '<li><a href="' + href(l[0]) + '" data-nav="' + l[0] + '"' + (l[0] === activeNav ? ' class="is-active" aria-current="page"' : '') + '>' + l[1] + '</a></li>';
         }).join('') + '</ul></nav>' +
         '<div class="nav-actions"><button class="icon-btn" type="button" data-theme-toggle></button>' +
-        '<a class="btn btn-secondary btn-sm btn-talk" href="' + href('contact') + '">Let\'s Talk ' + MV.icon('arrow-right', 'icon-sm') + '</a>' +
+        '<a class="btn btn-primary btn-sm btn-talk" href="' + href('contact') + '" data-magnetic>Hire Me</a>' +
         '<button class="icon-btn nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">' + MV.icon('menu') + '</button></div>' +
         '</div></header>' +
         '<div class="drawer" id="drawer" aria-hidden="true"><div class="drawer-backdrop" data-drawer-close></div>' +
         '<div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Menu"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
         '<span class="brand-name" data-brand-name>MyVerse</span><button class="icon-btn" type="button" data-drawer-close aria-label="Close menu">' + MV.icon('x') + '</button></div>' +
         LINKS.map(function (l) { return '<a class="drawer-link" href="' + href(l[0]) + '" data-nav="' + l[0] + '">' + l[1] + '</a>'; }).join('') +
-        '<a class="btn btn-primary" style="margin-top:12px" href="' + href('contact') + '" data-drawer-close>Let\'s Talk ' + MV.icon('arrow-right', 'icon-sm') + '</a></div></div>';
+        '<a class="btn btn-primary" style="margin-top:12px" href="' + href('contact') + '" data-drawer-close>Hire Me ' + MV.icon('arrow-right', 'icon-sm') + '</a></div></div>' +
+        '<div class="scroll-progress" aria-hidden="true"><i></i></div>' +
+        '<button type="button" class="to-top" id="to-top" aria-label="Back to top" title="Back to top">' + MV.icon('arrow-up') + '</button>';
       const slot = MV.$('#chrome-top');
       if (slot) slot.outerHTML = navHtml;
       const foot = MV.$('#chrome-foot');
@@ -53,8 +55,9 @@
         '<div><a class="brand" href="' + (home ? '#home' : 'index.html') + '"><span class="brand-mark" data-brand-mark>MV</span><span class="brand-text"><span class="brand-name" data-brand-name>MyVerse</span><span class="brand-sub" data-brand-sub>Portfolio</span></span></a>' +
         '<p data-footer-desc>Personal portfolio.</p></div>' +
         '<div><h4>Quick Links</h4><ul>' + LINKS.filter(function (l) { return l[0] !== 'home'; }).map(function (l) { return '<li><a href="' + href(l[0]) + '">' + l[1] + '</a></li>'; }).join('') + '</ul></div>' +
-        '<div><h4>Follow Me</h4><ul data-footer-social><li class="muted" style="font-size:14px">—</li></ul></div>' +
-        '</div><div class="footer-bottom"><span data-copyright>© ' + new Date().getFullYear() + ' MyVerse. All rights reserved.</span><span>Made with care · MyVerse</span></div></div></footer>';
+        '<div><h4>Follow Me</h4><div class="footer-social" data-footer-social></div></div>' +
+        '</div><div class="footer-bottom"><span data-copyright>© ' + new Date().getFullYear() + ' MyVerse. All rights reserved.</span>' +
+        '<a class="link-arrow" href="#" data-to-top>Back to top ' + MV.icon('arrow-up', 'icon-sm') + '</a></div></div></footer>';
       MV.theme.apply(MV.theme.mode() === 'dark');
       this.bindNav();
       const cm = this.cachedMeta();
@@ -66,7 +69,9 @@
       this.meta = m;
       const p = m.profil || {}, k = m.kontak || {}, s = m.pengaturan || {};
       const nama = p.nama || 'MyVerse';
-      MV.$$('[data-brand-name]').forEach(function (el) { el.textContent = nama; });
+      const kata = nama.trim().split(/\s+/);
+      const namaHtml = kata.length > 1 ? MV.esc(kata.slice(0, -1).join(' ')) + ' <b>' + MV.esc(kata[kata.length - 1]) + '</b>' : MV.esc(nama);
+      MV.$$('[data-brand-name]').forEach(function (el) { el.innerHTML = namaHtml; });
       MV.$$('[data-brand-sub]').forEach(function (el) { el.textContent = p.tagline || 'Portfolio'; });
       MV.$$('[data-brand-mark]').forEach(function (el) { el.textContent = MV.initials(nama).slice(0, 2); });
       MV.$$('[data-footer-desc]').forEach(function (el) { el.textContent = s.deskripsi_footer || p.deskripsi_singkat || ''; });
@@ -74,10 +79,32 @@
       const sos = MV.site.socialList(k.sosial);
       MV.$$('[data-footer-social]').forEach(function (el) {
         el.innerHTML = sos.length ? sos.map(function (x) {
-          return '<li><a href="' + MV.esc(x.url) + '" target="_blank" rel="noopener noreferrer">' + MV.icon(x.platform, 'icon-sm') + MV.esc(x.label) + '</a></li>';
-        }).join('') : '<li class="muted" style="font-size:14px">—</li>';
+          return '<a class="icon-btn" href="' + MV.esc(x.url) + '" target="_blank" rel="noopener noreferrer" aria-label="' + MV.esc(x.label) + '" title="' + MV.esc(x.label) + '">' + MV.icon(x.platform) + '</a>';
+        }).join('') : '<span class="muted" style="font-size:14px">—</span>';
       });
       if (s.tema_default) MV.theme.setDefault(s.tema_default);
+    },
+
+    // Kartu tulisan bersama (beranda + blog). cls boleh hasil rv() (diakhiri tanpa tanda kutip)
+    docCover: function (tipe) {
+      const t = String(tipe || '').toUpperCase();
+      return '<div class="doc-cover" aria-hidden="true"><div class="doc-sheet"><i></i><i></i><i></i><i></i><i></i><i></i>' +
+        (t ? '<span class="doc-type' + (t === 'PDF' ? '' : ' word') + '">' + MV.esc(t) + '</span>' : '') + '</div></div>';
+    },
+    postCard: function (m, likes, cls) {
+      const esc = MV.esc, I = MV.icon, karya = m.jenis === 'Karya Ilmiah';
+      const n = m.suka !== undefined ? m.suka : (likes || {})['artikel:' + m.id] || 0;
+      const penulis = String(m.penulis || '').split(/[;\n]/).map(function (x) { return x.trim(); }).filter(Boolean);
+      return '<article class="card card-hover post-card spot ' + (cls || '') + '">' +
+        '<div class="post-cover">' + (m.sampul_id ? MV.imgTag(m.sampul_id, m.judul, 900) : karya ? this.docCover(m.berkas_tipe) : MV.coverPh(m.judul, m.id)) +
+        (karya ? '<span class="kind-badge">' + I('file-badge', 'icon-sm') + 'Research' + (m.berkas_tipe ? ' · ' + esc(m.berkas_tipe) : '') + '</span>'
+          : m.tag && m.tag[0] ? '<span class="badge badge-solid">' + esc(m.tag[0]) + '</span>' : '') + '</div>' +
+        '<div class="post-body"><h3><a class="stretched" href="artikel.html?slug=' + encodeURIComponent(m.slug) + '">' + esc(m.judul) + '</a></h3>' +
+        (karya && penulis.length ? '<div class="post-authors">' + I('users', 'icon-sm') + '<span>' + esc(penulis.slice(0, 3).join(', ')) + (penulis.length > 3 ? ' et al.' : '') + '</span></div>' : '') +
+        (m.ringkasan ? '<p>' + esc(m.ringkasan) + '</p>' : '') +
+        '<div class="post-meta"><span>' + esc(MV.fmtDate(m.tanggal_terbit)) + '</span><span class="sep"></span><span>' +
+        (karya ? esc(m.penerbit || 'Research paper') : (m.waktu_baca || 1) + ' min read') + '</span>' +
+        '<span class="likes">' + I('heart', 'icon-sm') + '<span class="tnum">' + n + '</span></span></div></div></article>';
     },
 
     socialList: function (arr) {
@@ -89,9 +116,23 @@
 
     bindNav: function () {
       const nav = MV.$('#nav'), drawer = MV.$('#drawer'), toggle = MV.$('.nav-toggle');
-      const onScroll = function () { if (nav) nav.classList.toggle('is-scrolled', window.scrollY > 8); };
-      window.addEventListener('scroll', onScroll, { passive: true });
+      const bar = MV.$('.scroll-progress i'), up = MV.$('#to-top');
+      let ticking = false;
+      const onScroll = function () {
+        ticking = false;
+        const y = window.scrollY, max = document.documentElement.scrollHeight - innerHeight;
+        if (nav) { nav.classList.toggle('is-scrolled', y > 24); nav.classList.toggle('on-hero', home && y <= 24); }
+        if (bar) bar.style.setProperty('--p', max > 0 ? Math.min(1, y / max).toFixed(4) : 0);
+        if (up) up.classList.toggle('is-on', y > 700);
+        if (MV.onScrollFx) MV.onScrollFx(y);
+      };
+      window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
       onScroll();
+      document.addEventListener('click', function (e) {
+        if (e.target.closest('#to-top') || e.target.closest('[data-to-top]')) { e.preventDefault(); window.scrollTo({ top: 0, behavior: MV.reduceMotion ? 'auto' : 'smooth' }); }
+      });
+      MV.fx.bind();
       const open = function () {
         drawer.classList.add('is-open'); drawer.setAttribute('aria-hidden', 'false'); toggle.setAttribute('aria-expanded', 'true');
         document.body.style.overflow = 'hidden';
@@ -112,8 +153,8 @@
     // Sorot menu sesuai bagian yang terlihat (landing page)
     spy: function () {
       if (!home || !('IntersectionObserver' in window)) return;
-      const map = { home: 'home', about: 'about', experience: 'about', skills: 'about', achievements: 'about',
-        projects: 'projects', services: 'services', process: 'process', testimonials: 'process', contact: 'contact' };
+      const map = { home: 'home', about: 'about', services: 'services', projects: 'projects', experience: 'about', skills: 'about',
+        achievements: 'about', writing: 'blog', process: 'process', testimonials: 'process', cta: 'contact', contact: 'contact' };
       const setActive = function (id) {
         MV.$$('[data-nav]').forEach(function (a) {
           const on = a.dataset.nav === id;

@@ -99,7 +99,7 @@
     if (opts.pdfOnly && file.type !== 'application/pdf') throw new Error('Bagian ini hanya menerima PDF.');
     let blob = file, mime = file.type;
     if (mime === 'application/pdf') { if (file.size > 5e6) throw new Error('PDF maksimal 5 MB (berkas ini ' + (file.size / 1e6).toFixed(1) + ' MB).'); }
-    else { const c = await compress(file, folder === 'ikon'); blob = c.blob; mime = c.mime; }
+    else { const c = await compress(file, folder === 'ikon' || file.type === 'image/png'); blob = c.blob; mime = c.mime; }   // PNG transparan (mis. foto tanpa latar) tetap transparan
     const data = await toDataUrl(blob);
     const r = await MV.api('file.upload', { folder: folder, name: file.name, mime: mime, base64: data.split(',')[1] }, { timeout: 120000 });
     if (!r.ok) throw new Error(failMsg(r));
@@ -148,7 +148,7 @@
     ['ringkasan', 'Ringkasan', 'dashboard'], ['profil', 'Profil', 'user'], ['pengalaman', 'Pengalaman', 'briefcase'],
     ['pendidikan', 'Pendidikan', 'graduation-cap'], ['keterampilan', 'Keterampilan', 'wand'], ['prestasi', 'Prestasi', 'trophy'],
     ['proyek', 'Proyek', 'folder'], ['kategori', 'Kategori', 'shapes'], ['layanan', 'Layanan', 'layers'], ['proses', 'Proses', 'trending-up'],
-    ['testimoni', 'Testimoni', 'quote'], ['blog', 'Blog', 'file-text'], ['kontak', 'Kontak & Sosial', 'mail'],
+    ['testimoni', 'Testimoni', 'quote'], ['mitra', 'Mitra & Logo', 'users'], ['blog', 'Blog & Karya Ilmiah', 'file-text'], ['kontak', 'Kontak & Sosial', 'mail'],
     ['pesan', 'Pesan Masuk', 'inbox'], ['pengaturan', 'Pengaturan', 'settings']
   ];
   const A = { dirty: false, stats: null };
@@ -208,7 +208,7 @@
       if (pop) { pop.remove(); nb.setAttribute('aria-expanded', 'false'); return; }
       pop = document.createElement('div');
       pop.className = 'popover'; pop.setAttribute('role', 'menu');
-      pop.innerHTML = [['proyek/baru', 'Proyek', 'folder'], ['blog/baru', 'Artikel', 'file-text'], ['prestasi/baru', 'Prestasi', 'trophy'], ['pengalaman/baru', 'Pengalaman', 'briefcase'], ['testimoni/baru', 'Testimoni', 'quote']]
+      pop.innerHTML = [['proyek/baru', 'Proyek', 'folder'], ['blog/baru', 'Artikel', 'pen-tool'], ['blog/karya', 'Karya Ilmiah', 'file-badge'], ['prestasi/baru', 'Prestasi', 'trophy'], ['pengalaman/baru', 'Pengalaman', 'briefcase'], ['testimoni/baru', 'Testimoni', 'quote'], ['mitra/baru', 'Mitra', 'users']]
         .map(function (x) { return '<a role="menuitem" href="#/' + x[0] + '">' + I(x[2], 'icon-sm') + x[1] + '</a>'; }).join('');
       nb.parentElement.appendChild(pop);
       nb.setAttribute('aria-expanded', 'true');
@@ -253,7 +253,7 @@
     try {
       if (name === 'ringkasan') await pageDashboard(view);
       else if (name === 'profil' || name === 'kontak') await pageProfil(view, name);
-      else if (name === 'blog' && sub) await pageEditor(view, sub === 'baru' ? null : sub);
+      else if (name === 'blog' && sub) await pageEditor(view, sub === 'baru' || sub === 'karya' ? null : sub, sub === 'karya' ? 'Karya Ilmiah' : 'Artikel');
       else if (name === 'blog') await pageBlogList(view);
       else if (name === 'pesan') await pageInbox(view);
       else if (name === 'pengaturan') await pagePengaturan(view);
@@ -407,6 +407,14 @@
       cols: [{ label: 'Kutipan', html: function (r) { return '<span class="muted" style="display:block;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">“' + esc(r.isi) + '”</span>'; } }],
       form: [{ sec: 'Pemberi testimoni', f: [{ k: 'nama', label: 'Nama', req: 1, max: 80 }, { row: [{ k: 'jabatan', label: 'Jabatan', max: 80 }, { k: 'instansi', label: 'Instansi', max: 120 }] }, { k: 'foto_id', label: 'Foto (opsional)', type: 'image', folder: 'testimoni' }] },
         { sec: 'Testimoni', f: [{ k: 'isi', label: 'Isi testimoni', type: 'textarea', req: 1, max: 800 }] }]
+    },
+    mitra: {
+      title: 'Mitra & Logo', sing: 'Mitra', icon: 'users', desc: 'Logo instansi, sekolah, atau klien di baris "Trusted by" pada hero. Lima logo atau lebih bergulir otomatis. Tanpa mitra, hero menampilkan angka statistik.',
+      thumbIcon: 'logo_id',
+      main: function (r) { return [r.nama, r.tautan || 'Tanpa tautan']; },
+      cols: [],
+      form: [{ sec: 'Mitra', f: [{ k: 'nama', label: 'Nama instansi / klien', req: 1, max: 80 }, { k: 'logo_id', label: 'Logo', type: 'image', folder: 'ikon', help: 'PNG transparan terlihat paling rapi. Logo tampil abu-abu dan berwarna saat disorot. Tanpa logo, nama yang tampil.' },
+        { k: 'tautan', label: 'Tautan (opsional)', type: 'url', ph: 'https://…' }] }]
     }
   };
 
@@ -434,6 +442,7 @@
       '<div class="tbl-foot"><span id="pg-note"></span><div class="pagination" id="pg"></div></div></div>';
 
     const draw = function () {
+      if (!view.isConnected) return;                       // halaman sudah ditinggalkan (muat ulang selesai belakangan)
       const q = st.q.toLowerCase().trim();
       const list = st.items.filter(function (r) {
         if (st.f && String(r[def.filter.k]) !== st.f) return false;
@@ -465,6 +474,7 @@
     };
     const reload = async function (fresh) {
       const r = await load(name + '.list', {}, { fresh: fresh });
+      if (!view.isConnected) return;
       if (r.ok) { st.items = r.data.items; if (r.data.kategori) { st.x.kategori = r.data.kategori; A.kategori = r.data.kategori; } draw(); }
       else MV.toast(failMsg(r), 'err');
     };
@@ -744,16 +754,20 @@
       '<div class="tabs" role="tablist"><button role="tab" data-tab="profil" aria-selected="' + (tab === 'profil') + '">Profil</button><button role="tab" data-tab="kontak" aria-selected="' + (tab === 'kontak') + '">Kontak &amp; Sosial</button></div>' +
       '<div id="tab-profil"' + (tab === 'profil' ? '' : ' hidden') + '><form id="f-profil" class="set-grid" novalidate>' +
       '<div class="card card-pad" style="display:grid;gap:18px;align-content:start"><h3 class="h3">Foto &amp; dokumen</h3><p class="muted" style="font-size:14px;margin-top:-10px">Berkas langsung tersimpan setelah diunggah.</p>' +
-      fieldHtml({ k: 'foto_id', label: 'Foto profil (hero)', type: 'image', folder: 'profil', help: 'Potret tegak (4:5) terlihat paling bagus.' }, p.foto_id) +
+      fieldHtml({ k: 'foto_id', label: 'Foto profil (hero)', type: 'image', folder: 'profil', help: 'Potret tegak (4:5). Agar menyatu dengan latar seperti contoh, pakai PNG tanpa latar belakang (transparan).' }, p.foto_id) +
       fieldHtml({ k: 'foto_tentang_id', label: 'Foto bagian About (opsional)', type: 'image', folder: 'profil', help: 'Kosongkan untuk memakai foto profil.' }, p.foto_tentang_id) +
+      fieldHtml({ k: 'hero_bg_id', label: 'Foto latar hero (opsional)', type: 'image', folder: 'profil', help: 'Foto lanskap lebar (mis. pemandangan). Kosongkan untuk memakai ilustrasi pegunungan bawaan.' }, p.hero_bg_id) +
       '<div class="field"><span class="label">CV (PDF)</span><div data-upload="cv_file_id" data-folder="profil" data-kind="file" data-pdfonly="1"><input type="hidden" data-k="cv_file_id" value="' + esc(p.cv_file_id) + '"><div class="up-slot"></div></div><span class="help">Ditampilkan lewat tombol "View CV" tanpa tombol unduh.</span></div></div>' +
       '<div class="card card-pad" style="display:grid;gap:16px;align-content:start"><h3 class="h3">Identitas</h3>' +
       fieldHtml({ k: 'nama', label: 'Nama lengkap', req: 1, max: 80 }, p.nama) +
-      fieldHtml({ k: 'profesi', label: 'Profesi', max: 140, help: 'Apit kata dengan *bintang* agar berwarna ungu, contoh: Web Developer & *Digital Learning* Creator' }, p.profesi) +
+      fieldHtml({ k: 'profesi', label: 'Profesi', max: 140, help: 'Apit kata dengan *bintang* agar berwarna biru, contoh: Web Developer & *Digital Learning* Creator' }, p.profesi) +
+      fieldHtml({ k: 'peran_bergilir', label: 'Peran bergantian di hero (opsional)', max: 300, ph: 'Web Developer, English Educator, E-Learning Designer', help: 'Isi 2 peran atau lebih, pisahkan dengan koma — tampil bergantian seperti diketik. Kosongkan untuk memakai Profesi.' }, p.peran_bergilir) +
       '<div class="frow">' + fieldHtml({ k: 'tagline', label: 'Keterangan di samping logo', max: 60 }, p.tagline) + fieldHtml({ k: 'status_saat_ini', label: 'Status (kartu melayang)', max: 80, ph: 'Open for collaboration' }, p.status_saat_ini) + '</div>' +
       '<div class="frow">' + fieldHtml({ k: 'lokasi', label: 'Lokasi', max: 80 }, p.lokasi) + fieldHtml({ k: 'tahun_mulai_karier', label: 'Tahun mulai berkarier', max: 4, ph: '2019', help: 'Untuk angka "Years Experience".' }, p.tahun_mulai_karier) + '</div>' +
-      fieldHtml({ k: 'deskripsi_singkat', label: 'Perkenalan singkat (hero)', type: 'textarea', rows: 3, max: 320 }, p.deskripsi_singkat) + '</div>' +
-      '<div class="card card-pad full" style="display:grid;gap:16px"><h3 class="h3">About Me</h3><div class="frow">' +
+      fieldHtml({ k: 'deskripsi_singkat', label: 'Perkenalan singkat (hero)', type: 'textarea', rows: 3, max: 320 }, p.deskripsi_singkat) +
+      fieldHtml({ k: 'bahasa', label: 'Bahasa yang dikuasai (kartu info About)', max: 120, ph: 'Indonesia, English' }, p.bahasa) + '</div>' +
+      '<div class="card card-pad full" style="display:grid;gap:16px"><h3 class="h3">About Me</h3>' +
+      fieldHtml({ k: 'judul_tentang', label: 'Judul besar bagian About', max: 120, ph: 'Building Solutions That Make an Impact', help: 'Kosongkan untuk "Who I Am". Apit kata dengan *bintang* agar berwarna biru.' }, p.judul_tentang) + '<div class="frow">' +
       fieldHtml({ k: 'tentang', label: 'Latar belakang', type: 'textarea', rows: 6, max: 2500, help: 'Pisahkan paragraf dengan baris kosong.' }, p.tentang) +
       fieldHtml({ k: 'kepribadian_profesional', label: 'Kepribadian profesional', type: 'textarea', rows: 6, max: 2500 }, p.kepribadian_profesional) + '</div>' +
       fieldHtml({ k: 'perjalanan_karier', label: 'Perjalanan karier', type: 'textarea', rows: 4, max: 2500, help: 'Satu baris per tonggak: Tahun | Judul | Keterangan (maks. 5 baris).' }, p.perjalanan_karier) +
@@ -792,7 +806,7 @@
     fp.addEventListener('submit', async function (e) {
       e.preventDefault();
       const v = collect(fp);
-      delete v.foto_id; delete v.foto_tentang_id; delete v.cv_file_id;
+      delete v.foto_id; delete v.foto_tentang_id; delete v.cv_file_id; delete v.hero_bg_id;
       if (!v.nama) { MV.toast('Nama wajib diisi.', 'err'); $('#fld-nama').focus(); return; }
       const btn = $('#save-profil'); busy(btn, true);
       const r = await write('kv.save', { tab: 'Profil', values: v }, ['kv.get']);
@@ -812,41 +826,55 @@
     });
   }
 
-  // ============ Blog: daftar (AD-06) ============
+  // ============ Blog & karya ilmiah: daftar (AD-06, v1.1) ============
+  const DOC_MIME = { pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+  const DOC_LABEL = { 'application/pdf': 'PDF', 'application/msword': 'DOC', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX' };
+  const fmtSize = function (b) { b = Number(b) || 0; return b >= 1e6 ? (b / 1e6).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB'; };
+  const isKarya = function (a) { return a.jenis === 'Karya Ilmiah'; };
   async function pageBlogList(view) {
     const r = await load('artikel.list', {});
     if (!r.ok) throw new Error(failMsg(r));
-    let items = r.data.items, q = '', sf = '';
-    view.innerHTML = '<div class="page-head"><div><h2>Blog</h2><p>Tulis artikel, simpan sebagai draf, lalu terbitkan saat siap. Hanya artikel berstatus Terbit yang tampil di situs.</p></div>' +
-      '<div class="actions"><a class="btn btn-primary" href="#/blog/baru">' + I('pen-tool', 'icon-sm') + 'Tulis Artikel</a></div></div>' +
-      '<div class="card filters"><div class="search-box">' + I('search') + '<input class="input" id="b-q" type="search" placeholder="Cari judul artikel…" aria-label="Cari artikel"></div>' +
-      '<select class="select" id="b-s" aria-label="Status"><option value="">Semua status</option><option>Terbit</option><option>Draf</option></select><span></span><span class="count-note" id="b-count"></span></div>' +
-      '<div class="card" style="overflow:hidden"><div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:80px"></th><th>Judul</th><th>Tag</th><th>Status</th><th>Tanggal</th><th>Suka</th><th style="text-align:right">Aksi</th></tr></thead><tbody id="b-rows"></tbody></table></div></div>';
+    let items = r.data.items, q = '', sf = '', jf = '';
+    view.innerHTML = '<div class="page-head"><div><h2>Blog &amp; Karya Ilmiah</h2><p>Tulis artikel atau unggah penelitian/karya ilmiah (PDF/Word). Simpan sebagai draf, lalu terbitkan saat siap. Hanya yang berstatus Terbit yang tampil di situs.</p></div>' +
+      '<div class="actions"><a class="btn btn-secondary" href="#/blog/karya">' + I('upload', 'icon-sm') + 'Unggah Karya Ilmiah</a><a class="btn btn-primary" href="#/blog/baru">' + I('pen-tool', 'icon-sm') + 'Tulis Artikel</a></div></div>' +
+      '<div class="card filters"><div class="search-box">' + I('search') + '<input class="input" id="b-q" type="search" placeholder="Cari judul, penulis…" aria-label="Cari"></div>' +
+      '<select class="select" id="b-j" aria-label="Jenis"><option value="">Semua jenis</option><option>Artikel</option><option>Karya Ilmiah</option></select>' +
+      '<select class="select" id="b-s" aria-label="Status"><option value="">Semua status</option><option>Terbit</option><option>Draf</option></select><span class="count-note" id="b-count"></span></div>' +
+      '<div class="card" style="overflow:hidden"><div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:80px"></th><th>Judul</th><th>Jenis</th><th>Status</th><th>Tanggal</th><th>Suka</th><th style="text-align:right">Aksi</th></tr></thead><tbody id="b-rows"></tbody></table></div></div>';
     const draw = function () {
-      const list = items.filter(function (a) { return (!sf || a.status === sf) && (!q || a.judul.toLowerCase().indexOf(q) > -1); });
-      $('#b-count').textContent = list.length + ' artikel';
+      if (!view.isConnected) return;
+      const list = items.filter(function (a) {
+        return (!sf || a.status === sf) && (!jf || (isKarya(a) ? 'Karya Ilmiah' : 'Artikel') === jf) &&
+          (!q || (a.judul + ' ' + (a.penulis || '')).toLowerCase().indexOf(q) > -1);
+      });
+      const nk = items.filter(isKarya).length;
+      $('#b-count').textContent = list.length + ' item · ' + (items.length - nk) + ' artikel, ' + nk + ' karya ilmiah';
       $('#b-rows').innerHTML = list.length ? list.map(function (a) {
-        return '<tr data-id="' + esc(a.id) + '"><td>' + thumb(a.sampul_id, a.judul, a.id) + '</td><td class="title-cell cell-main"><b>' + esc(a.judul) + '</b><small class="mono">/artikel/' + esc(a.slug) + ' · ' + a.waktu_baca + ' mnt baca</small></td>' +
-          '<td data-label="Tag"><div class="tech-chips">' + String(a.tag || '').split(',').filter(function (t) { return t.trim(); }).slice(0, 2).map(function (t) { return '<span class="chip">' + esc(t.trim()) + '</span>'; }).join('') + '</div></td>' +
+        const k = isKarya(a), lab = DOC_LABEL[a.berkas_mime] || '';
+        const sub = k ? [lab && a.berkas_ukuran ? lab + ' · ' + fmtSize(a.berkas_ukuran) : (a.berkas_id ? lab : 'Belum ada berkas'), a.penulis].filter(Boolean).join(' · ') : '/artikel/' + a.slug + ' · ' + a.waktu_baca + ' mnt baca';
+        return '<tr data-id="' + esc(a.id) + '"><td>' + (k && !a.sampul_id ? '<span class="thumb doc-thumb' + (lab === 'PDF' ? '' : ' word') + '">' + esc(lab || 'DOC') + '</span>' : thumb(a.sampul_id, a.judul, a.id)) + '</td>' +
+          '<td class="title-cell cell-main"><b>' + esc(a.judul) + '</b><small class="' + (k ? '' : 'mono') + '">' + esc(sub) + '</small></td>' +
+          '<td data-label="Jenis">' + (k ? '<span class="st st-karya">' + I('file-badge', 'icon-sm') + 'Karya Ilmiah</span>' : '<span class="st st-artikel">' + I('pen-tool', 'icon-sm') + 'Artikel</span>') + '</td>' +
           '<td data-label="Status">' + stPill(a.status) + (bool(a.tampil) || a.tampil === '' ? '' : ' <span class="st st-hidden">Disembunyikan</span>') + '</td>' +
           '<td data-label="Tanggal" class="tnum">' + esc(tglID(a.tanggal_terbit || a.dibuat)) + '</td><td data-label="Suka"><span class="heart-n">' + I('heart', 'icon-sm') + (a.suka || 0) + '</span></td>' +
           '<td class="cell-actions"><div class="row-actions">' + (a.status === 'Terbit' ? '<a class="icon-btn" href="artikel.html?slug=' + encodeURIComponent(a.slug) + '" target="_blank" rel="noopener" aria-label="Lihat di situs">' + I('eye') + '</a>' : '') +
           '<a class="icon-btn" href="#/blog/' + esc(a.id) + '" aria-label="Ubah">' + I('pencil') + '</a><button type="button" class="icon-btn danger" data-del aria-label="Hapus">' + I('trash') + '</button></div></td></tr>';
-      }).join('') : '<tr><td colspan="7"><div class="empty" style="border:0">' + I('file-text') + '<p><strong>' + (items.length ? 'Tidak ada artikel yang cocok.' : 'Belum ada artikel.') + '</strong></p></div></td></tr>';
+      }).join('') : '<tr><td colspan="7"><div class="empty" style="border:0">' + I('file-text') + '<p><strong>' + (items.length ? 'Tidak ada yang cocok.' : 'Belum ada artikel atau karya ilmiah.') + '</strong></p></div></td></tr>';
     };
     draw();
     $('#b-q').addEventListener('input', MV.debounce(function (e) { q = e.target.value.toLowerCase().trim(); draw(); }, 150));
     $('#b-s').addEventListener('change', function (e) { sf = e.target.value; draw(); });
+    $('#b-j').addEventListener('change', function (e) { jf = e.target.value; draw(); });
     view.addEventListener('click', async function (e) {
       if (!e.target.closest('[data-del]')) return;
       const id = e.target.closest('tr').dataset.id, a = items.find(function (x) { return x.id === id; });
-      if (!(await confirmDialog({ title: 'Hapus "' + a.judul + '"?', text: 'Artikel dihapus permanen dari Sheets. Gambar sampul dipindah ke Sampah Drive.', ok: 'Hapus', danger: true, icon: 'trash' }))) return;
+      if (!(await confirmDialog({ title: 'Hapus "' + a.judul + '"?', text: 'Data dihapus permanen dari Sheets. Gambar sampul' + (isKarya(a) ? ' dan berkas dokumen' : '') + ' dipindah ke Sampah Drive (masih bisa dipulihkan dari sana).', ok: 'Hapus', danger: true, icon: 'trash' }))) return;
       const r2 = await write('artikel.delete', { id: id }, ['artikel.list']);
-      if (r2.ok) { items = items.filter(function (x) { return x.id !== id; }); draw(); MV.toast('Artikel dihapus.', 'ok'); } else MV.toast(failMsg(r2), 'err');
+      if (r2.ok) { items = items.filter(function (x) { return x.id !== id; }); draw(); MV.toast('Dihapus.', 'ok'); } else MV.toast(failMsg(r2), 'err');
     });
   }
 
-  // ============ Blog: editor (AD-06) ============
+  // ============ Blog: editor artikel & karya ilmiah (AD-06, v1.1) ============
   function loadQuill() {
     if (window.Quill) return Promise.resolve(true);
     return new Promise(function (resolve) {
@@ -858,31 +886,108 @@
       document.head.appendChild(s);
     });
   }
-  async function pageEditor(view, id) {
-    let a = { judul: '', slug: '', ringkasan: '', isi_html: '', sampul_id: '', tag: '', status: 'Draf', tanggal_terbit: '', tampil: 'TRUE' };
+  async function uploadDoc(file) {
+    const ext = (String(file.name).split('.').pop() || '').toLowerCase();
+    const mime = DOC_MIME[ext] || (DOC_LABEL[file.type] ? file.type : '');
+    if (!mime) throw new Error('Gunakan berkas PDF, DOC, atau DOCX.');
+    if (file.size > 10e6) throw new Error('Berkas maksimal 10 MB (berkas ini ' + (file.size / 1e6).toFixed(1).replace('.', ',') + ' MB). Kompres PDF-nya atau simpan ulang Word dengan gambar beresolusi lebih kecil.');
+    const data = await toDataUrl(file);
+    const r = await MV.api('file.upload', { folder: 'dokumen', name: file.name, mime: mime, base64: data.split(',')[1] }, { timeout: 240000 });
+    if (!r.ok) throw new Error(failMsg(r));
+    if (r.data.peringatan) MV.toast(r.data.peringatan, 'info', 8000);
+    return { id: r.data.id, nama: String(file.name).slice(0, 140), mime: mime, ukuran: file.size };
+  }
+  async function pageEditor(view, id, jenisBaru) {
+    let a = { judul: '', slug: '', ringkasan: '', isi_html: '', sampul_id: '', tag: '', status: 'Draf', tanggal_terbit: '', tampil: 'TRUE',
+      jenis: jenisBaru || 'Artikel', berkas_id: '', berkas_nama: '', berkas_mime: '', berkas_ukuran: '', penulis: '', abstrak: '', penerbit: '', doi: '', boleh_unduh: 'FALSE' };
     if (id) {
       const r = await load('artikel.list', { id: id }, { maxAge: 5000 });
       if (!r.ok || !r.data.items.length) throw new Error(r.ok ? 'Artikel tidak ditemukan.' : failMsg(r));
-      a = r.data.items[0];
+      a = Object.assign(a, r.data.items[0]);
+      if (a.jenis !== 'Karya Ilmiah') a.jenis = 'Artikel';
     }
-    view.innerHTML = '<div class="page-head"><div><a class="back-link" href="#/blog">' + I('arrow-left', 'icon-sm') + 'Kembali ke daftar artikel</a><h2 style="margin-top:4px">' + (id ? 'Ubah Artikel' : 'Tulis Artikel') + '</h2></div>' +
+    let jenis = a.jenis;
+    const judulHalaman = function () { return (id ? 'Ubah ' : jenis === 'Karya Ilmiah' ? 'Unggah ' : 'Tulis ') + (jenis === 'Karya Ilmiah' ? 'Karya Ilmiah' : 'Artikel'); };
+    view.innerHTML = '<div class="page-head"><div><a class="back-link" href="#/blog">' + I('arrow-left', 'icon-sm') + 'Kembali ke daftar</a><h2 style="margin-top:4px" id="ed-h">' + judulHalaman() + '</h2></div>' +
       '<div class="actions">' + stPill(a.status) + '</div></div>' +
-      '<div class="editor-grid"><div class="card card-pad"><label class="sr-only" for="ed-title">Judul</label><input class="title-input" id="ed-title" placeholder="Judul artikel…" maxlength="180" value="' + esc(a.judul) + '">' +
-      '<div id="editor-wrap"><div class="muted" style="padding:24px 0">Memuat editor…</div></div></div>' +
-      '<aside class="side-panel"><div class="card card-pad" style="display:grid;gap:16px"><h3 class="h3">Pengaturan artikel</h3>' +
+      '<div class="kind-switch" role="radiogroup" aria-label="Jenis tulisan"><button type="button" role="radio" data-jenis="Artikel">' + I('pen-tool', 'icon-sm') + 'Artikel<small>Tulis langsung di editor</small></button>' +
+      '<button type="button" role="radio" data-jenis="Karya Ilmiah">' + I('file-badge', 'icon-sm') + 'Karya Ilmiah<small>Unggah PDF / Word penelitian</small></button></div>' +
+      '<div class="editor-grid"><div class="card card-pad"><label class="sr-only" for="ed-title">Judul</label><input class="title-input" id="ed-title" placeholder="Judul…" maxlength="180" value="' + esc(a.judul) + '">' +
+      '<section id="doc-panel" class="doc-panel"><div class="fsec-title">Berkas dokumen</div><div id="doc-slot"></div>' +
+      '<input type="hidden" data-k="berkas_id" value="' + esc(a.berkas_id) + '"><input type="hidden" data-k="berkas_nama" value="' + esc(a.berkas_nama) + '">' +
+      '<input type="hidden" data-k="berkas_mime" value="' + esc(a.berkas_mime) + '"><input type="hidden" data-k="berkas_ukuran" value="' + esc(a.berkas_ukuran) + '">' +
+      fieldHtml({ k: 'penulis', label: 'Penulis', type: 'textarea', rows: 2, max: 300, help: 'Pisahkan beberapa penulis dengan titik koma (;), contoh: Restu Putra Mulyana; Dr. Ani Lestari' }, a.penulis) +
+      fieldHtml({ k: 'abstrak', label: 'Abstrak', type: 'textarea', rows: 7, max: 5000, help: 'Tampil di atas pratinjau dokumen dan dipakai sebagai ringkasan kartu bila Ringkasan kosong.' }, a.abstrak) +
+      '<div class="frow">' + fieldHtml({ k: 'penerbit', label: 'Jurnal / konferensi / institusi', max: 200, ph: 'Jurnal Pendidikan Bahasa Inggris, Vol. 5 No. 2' }, a.penerbit) +
+      fieldHtml({ k: 'doi', label: 'DOI atau tautan sumber (opsional)', max: 200, ph: '10.1234/abcd.2025.01 atau https://…' }, a.doi) + '</div></section>' +
+      '<div class="ed-label" id="ed-label"></div><div id="editor-wrap"><div class="muted" style="padding:24px 0">Memuat editor…</div></div></div>' +
+      '<aside class="side-panel"><div class="card card-pad" style="display:grid;gap:16px"><h3 class="h3">Pengaturan</h3>' +
+      '<div id="doc-side">' + fieldHtml({ k: 'boleh_unduh', label: 'Izinkan pengunjung mengunduh berkas', type: 'toggle' }, a.boleh_unduh) +
+      '<p class="help" style="margin-top:6px">Mati: pengunjung hanya bisa membaca (tombol unduh/cetak Drive dimatikan). Nyala: tombol Download tampil.</p></div>' +
       fieldHtml({ k: 'slug', label: 'Slug', type: 'slug', help: 'Kosongkan agar dibuat dari judul.' }, a.slug) +
-      fieldHtml({ k: 'ringkasan', label: 'Ringkasan', type: 'textarea', rows: 3, max: 400 }, a.ringkasan) +
-      fieldHtml({ k: 'tag', label: 'Tag', type: 'tags' }, a.tag) +
-      fieldHtml({ k: 'sampul_id', label: 'Gambar sampul', type: 'image', folder: 'blog' }, a.sampul_id) +
+      fieldHtml({ k: 'ringkasan', label: 'Ringkasan kartu', type: 'textarea', rows: 3, max: 400 }, a.ringkasan) +
+      fieldHtml({ k: 'tag', label: 'Tag / kata kunci', type: 'tags' }, a.tag) +
+      fieldHtml({ k: 'sampul_id', label: 'Gambar sampul (opsional)', type: 'image', folder: 'blog' }, a.sampul_id) +
       fieldHtml({ k: 'tanggal_terbit', label: 'Tanggal terbit', ph: 'Otomatis saat diterbitkan' }, a.tanggal_terbit) +
       fieldHtml({ k: 'tampil', label: 'Tampilkan di situs', type: 'toggle' }, a.tampil === '' ? 'TRUE' : a.tampil) + '</div>' +
       '<div class="card card-pad" style="display:grid;gap:10px"><button type="button" class="btn btn-secondary" id="ed-preview">' + I('eye', 'icon-sm') + 'Pratinjau</button>' +
       '<button type="button" class="btn btn-secondary" id="ed-draft">' + I('file-text', 'icon-sm') + 'Simpan Draf</button><button type="button" class="btn btn-primary" id="ed-publish">' + I('send', 'icon-sm') + (a.status === 'Terbit' ? 'Perbarui Terbitan' : 'Terbitkan') + '</button>' +
       '<p class="help" id="ed-note"></p></div></aside></div>';
-    const side = $('.side-panel', view);
-    bindUploads(side); bindTags(side);
+    const side = $('.side-panel', view), docPanel = $('#doc-panel'), slot = $('#doc-slot');
+    bindUploads(side); bindTags(side); bindUploads(docPanel);
     $('#fld-tanggal_terbit').type = 'date';
+    const hv = function (k) { return $('[data-k="' + k + '"]', docPanel); };
+    const terapkanJenis = function () {
+      const k = jenis === 'Karya Ilmiah';
+      $$('[data-jenis]', view).forEach(function (b) { const on = b.dataset.jenis === jenis; b.setAttribute('aria-checked', String(on)); b.classList.toggle('is-on', on); });
+      docPanel.hidden = !k; $('#doc-side').hidden = !k;
+      $('#ed-label').textContent = k ? 'Catatan tambahan (opsional) — mis. latar belakang, metode singkat, atau ucapan terima kasih' : '';
+      $('#ed-label').hidden = !k;
+      $('#ed-title').placeholder = k ? 'Judul penelitian / karya ilmiah…' : 'Judul artikel…';
+      $('#ed-h').textContent = judulHalaman();
+      const lbl = $('label[for="fld-ringkasan"]');
+      if (lbl) lbl.textContent = k ? 'Ringkasan kartu (opsional — kosong = potongan abstrak)' : 'Ringkasan kartu';
+    };
+    const renderDoc = function (busyFile) {
+      const did = hv('berkas_id').value, mime = hv('berkas_mime').value, lab = DOC_LABEL[mime] || 'DOK';
+      if (busyFile) {
+        slot.innerHTML = '<div class="up-preview"><span class="ph">' + I('upload') + '</span><div class="meta"><b>' + esc(busyFile.name) + '</b>Mengunggah ke Google Drive… (' + fmtSize(busyFile.size) + ')<div class="progress"><i></i></div></div></div>';
+      } else if (did) {
+        slot.innerHTML = '<div class="doc-file"><span class="doc-ico' + (lab === 'PDF' ? '' : ' word') + '">' + esc(lab) + '</span><div class="meta"><b>' + esc(hv('berkas_nama').value || 'Dokumen') + '</b><span>' + esc(lab) + (hv('berkas_ukuran').value ? ' · ' + fmtSize(hv('berkas_ukuran').value) : '') + ' · tersimpan di Google Drive</span></div>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-doc-prev>' + I('eye', 'icon-sm') + 'Pratinjau</button><label class="btn btn-secondary btn-sm" style="position:relative;overflow:hidden">Ganti<input type="file" data-doc-file accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>' +
+          '<button type="button" class="icon-btn" data-doc-clear aria-label="Lepas berkas">' + I('x') + '</button></div>';
+      } else {
+        slot.innerHTML = '<label class="drop doc-drop">' + I('upload') + '<span><b>Seret berkas PDF atau Word ke sini</b> atau klik untuk memilih</span><small>PDF, DOC, atau DOCX — maksimal 10 MB · tersimpan di folder 07_Karya_Ilmiah Google Drive</small>' +
+          '<input type="file" data-doc-file accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>';
+      }
+    };
+    terapkanJenis(); renderDoc();
+    $('.kind-switch', view).addEventListener('click', function (e) {
+      const b = e.target.closest('[data-jenis]');
+      if (!b || b.dataset.jenis === jenis) return;
+      jenis = b.dataset.jenis; A.dirty = true; terapkanJenis();
+    });
+    docPanel.addEventListener('change', async function (e) {
+      const fi = e.target.closest('input[data-doc-file]');
+      if (!fi || !fi.files[0]) return;
+      const file = fi.files[0];
+      renderDoc(file);
+      try {
+        const up = await uploadDoc(file);
+        hv('berkas_id').value = up.id; hv('berkas_nama').value = up.nama; hv('berkas_mime').value = up.mime; hv('berkas_ukuran').value = up.ukuran;
+        if (!$('#ed-title').value.trim()) $('#ed-title').value = up.nama.replace(/\.(pdf|docx?)$/i, '').replace(/[_-]+/g, ' ').trim();
+        A.dirty = true;
+        MV.toast('Berkas terunggah. Jangan lupa Simpan Draf atau Terbitkan.', 'ok', 5000);
+      } catch (err) { MV.toast(err.message, 'err', 7000); }
+      renderDoc();
+    });
+    docPanel.addEventListener('click', function (e) {
+      if (e.target.closest('[data-doc-clear]')) { ['berkas_id', 'berkas_nama', 'berkas_mime', 'berkas_ukuran'].forEach(function (k) { hv(k).value = ''; }); A.dirty = true; renderDoc(); }
+      else if (e.target.closest('[data-doc-prev]')) MV.viewer.open({ type: 'pdf', id: hv('berkas_id').value, title: hv('berkas_nama').value || 'Pratinjau dokumen', note: 'Pratinjau seperti yang dilihat pengunjung.' });
+    });
     side.addEventListener('input', function () { A.dirty = true; });
+    side.addEventListener('change', function () { A.dirty = true; });
+    docPanel.addEventListener('input', function () { A.dirty = true; });
     $('#ed-title').addEventListener('input', function () { A.dirty = true; });
     const wrap = $('#editor-wrap');
     const hasQuill = await loadQuill();
@@ -931,12 +1036,16 @@
     }
     async function save(status, btn) {
       const judul = $('#ed-title').value.trim();
-      if (!judul) { MV.toast('Judul artikel wajib diisi.', 'err'); $('#ed-title').focus(); return; }
+      if (!judul) { MV.toast('Judul wajib diisi.', 'err'); $('#ed-title').focus(); return; }
+      const karya = jenis === 'Karya Ilmiah';
+      if (karya && status === 'Terbit' && !hv('berkas_id').value) { MV.toast('Unggah berkas PDF atau Word dulu sebelum menerbitkan karya ilmiah.', 'err', 6000); slot.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
       busy(btn, true, status === 'Terbit' ? 'Menerbitkan…' : 'Menyimpan…');
       try {
         const html = await uploadInline(getHtml());
-        const v = collect(side);
-        const item = { judul: judul, isi_html: html, ringkasan: v.ringkasan, tag: v.tag, sampul_id: v.sampul_id, slug: v.slug, tanggal_terbit: v.tanggal_terbit, tampil: v.tampil, status: status };
+        const v = collect(side), dv = collect(docPanel);
+        const item = { judul: judul, isi_html: html, ringkasan: v.ringkasan, tag: v.tag, sampul_id: v.sampul_id, slug: v.slug, tanggal_terbit: v.tanggal_terbit, tampil: v.tampil, status: status, jenis: jenis };
+        if (karya) Object.assign(item, { berkas_id: dv.berkas_id, berkas_nama: dv.berkas_nama, berkas_mime: dv.berkas_mime, berkas_ukuran: dv.berkas_ukuran,
+          penulis: dv.penulis, abstrak: dv.abstrak, penerbit: dv.penerbit, doi: dv.doi, boleh_unduh: v.boleh_unduh });
         if (a.id) item.id = a.id;
         const r = await write('artikel.save', { item: item }, ['artikel.list']);
         if (!r.ok) throw new Error(failMsg(r));
@@ -944,14 +1053,15 @@
         const wasNew = !a.id;
         a = Object.assign(a, r.data);
         $('#fld-slug').value = r.data.slug; $('#fld-tanggal_terbit').value = r.data.tanggal_terbit || '';
-        MV.toast(status === 'Terbit' ? 'Artikel terbit di situs.' : 'Draf disimpan.', 'ok');
+        if (r.data.doi !== undefined && $('#fld-doi')) $('#fld-doi').value = r.data.doi || '';
+        MV.toast(status === 'Terbit' ? (karya ? 'Karya ilmiah terbit di situs.' : 'Artikel terbit di situs.') : 'Draf disimpan.', 'ok');
+        if (r.data.peringatan) MV.toast(r.data.peringatan, 'info', 8000);
         $('#ed-note').innerHTML = status === 'Terbit' ? 'Tayang di <a href="artikel.html?slug=' + encodeURIComponent(r.data.slug) + '" target="_blank" rel="noopener">artikel.html?slug=' + esc(r.data.slug) + '</a>' : 'Draf tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + '.';
-        if (wasNew) { history.replaceState(null, '', '#/blog/' + r.data.id); lastHash = 'blog/' + r.data.id; }
+        if (wasNew) { history.replaceState(null, '', '#/blog/' + r.data.id); lastHash = 'blog/' + r.data.id; id = r.data.id; $('#ed-h').textContent = judulHalaman(); }
         $('.page-head .actions', view).innerHTML = stPill(r.data.status);
-        $('#ed-publish').innerHTML = I('send', 'icon-sm') + (r.data.status === 'Terbit' ? 'Perbarui Terbitan' : 'Terbitkan');
       } catch (e) { MV.toast(e.message, 'err', 6000); }
       busy(btn, false);
-      if (status === 'Terbit') $('#ed-publish').innerHTML = I('send', 'icon-sm') + 'Perbarui Terbitan';
+      $('#ed-publish').innerHTML = I('send', 'icon-sm') + (a.status === 'Terbit' ? 'Perbarui Terbitan' : 'Terbitkan');
     }
     $('#ed-draft').addEventListener('click', function () { save('Draf', this); });
     $('#ed-publish').addEventListener('click', function () { save('Terbit', this); });
@@ -959,8 +1069,12 @@
       let m = $('#ed-prev'); if (m) m.remove();
       m = document.createElement('div'); m.id = 'ed-prev'; m.className = 'modal is-open';
       const html = window.DOMPurify ? DOMPurify.sanitize(getHtml()) : getHtml().replace(/<script[\s\S]*?<\/script>/gi, '');
-      m.innerHTML = '<div class="modal-backdrop" data-x></div><div class="modal-panel"><div class="modal-head"><h2>Pratinjau artikel</h2><button class="icon-btn" data-x aria-label="Tutup">' + I('x') + '</button></div>' +
-        '<div style="overflow-y:auto;padding:32px 24px;background:var(--bg)"><article class="article"><h1 style="font-size:36px;font-weight:800;letter-spacing:-.03em;margin-bottom:24px">' + esc($('#ed-title').value || 'Tanpa judul') + '</h1><div class="prose">' + html + '</div></article></div></div>';
+      const karya = jenis === 'Karya Ilmiah', dv = collect(docPanel);
+      const docPart = karya ? (dv.penulis ? '<p class="muted" style="margin-bottom:12px">' + esc(dv.penulis) + '</p>' : '') +
+        (dv.abstrak ? '<div class="card abstract" style="margin-bottom:20px"><h2>Abstract</h2><p>' + esc(dv.abstrak) + '</p></div>' : '') +
+        (dv.berkas_id ? '<div class="card doc-viewer" style="margin-bottom:24px"><div class="doc-frame" style="height:60vh"><iframe title="Pratinjau" src="' + MV.preview(dv.berkas_id) + '"></iframe></div></div>' : '<div class="alert alert-warn">' + I('alert', 'icon-sm') + '<span>Belum ada berkas dokumen.</span></div>') : '';
+      m.innerHTML = '<div class="modal-backdrop" data-x></div><div class="modal-panel"><div class="modal-head"><h2>Pratinjau ' + (karya ? 'karya ilmiah' : 'artikel') + '</h2><button class="icon-btn" data-x aria-label="Tutup">' + I('x') + '</button></div>' +
+        '<div style="overflow-y:auto;padding:32px 24px;background:var(--bg)"><article class="article' + (karya ? ' wide' : '') + '"><h1 style="font-size:34px;font-weight:800;letter-spacing:-.03em;margin-bottom:16px">' + esc($('#ed-title').value || 'Tanpa judul') + '</h1>' + docPart + '<div class="prose">' + html + '</div></article></div></div>';
       document.body.appendChild(m);
       m.addEventListener('click', function (e) { if (e.target.closest('[data-x]')) m.remove(); });
     });
@@ -978,6 +1092,7 @@
       '<div class="pill-row scroll-x" id="m-filter" role="group" aria-label="Filter status"></div></div><div class="inbox-items" id="m-items"></div></div><div class="reader" id="m-read"></div></div>';
     const counts = function () { const c = { Semua: 0 }; items.forEach(function (m) { c[m.status] = (c[m.status] || 0) + 1; if (m.status !== 'Arsip') c.Semua++; }); return c; };
     const drawList = function () {
+      if (!view.isConnected) return;
       const c = counts();
       $('#m-filter').innerHTML = ['Semua', 'Baru', 'Dibaca', 'Dibalas', 'Arsip'].map(function (s) { return '<button type="button" class="pill" data-mf="' + s + '" aria-pressed="' + (filt === s) + '">' + s + ' <span class="count">' + (c[s] || 0) + '</span></button>'; }).join('');
       const ql = q.toLowerCase();
@@ -990,6 +1105,7 @@
       const b = $('[data-badge="pesan"]'); if (b) { b.hidden = !c.Baru; b.textContent = c.Baru || ''; }
     };
     const drawReader = function () {
+      if (!view.isConnected) return;
       const m = items.find(function (x) { return x.id === cur; });
       $('#inbox').classList.toggle('reading', !!m);
       if (!m) { $('#m-read').innerHTML = '<div class="reader-empty">' + I('mail', 'icon-lg') + '<span>Pilih pesan untuk membacanya.</span></div>'; return; }
@@ -1033,7 +1149,7 @@
   }
 
   // ============ Pengaturan, sistem, cadangan & impor (AD-08) ============
-  const IMPOR_TAB = ['Pengaturan', 'Profil', 'Kontak', 'Kategori', 'Pengalaman', 'Pendidikan', 'Keterampilan', 'Prestasi', 'Layanan', 'Proses', 'Testimoni', 'Proyek', 'Artikel', 'Pesan', 'Suka'];
+  const IMPOR_TAB = ['Pengaturan', 'Profil', 'Kontak', 'Kategori', 'Pengalaman', 'Pendidikan', 'Keterampilan', 'Prestasi', 'Layanan', 'Proses', 'Testimoni', 'Mitra', 'Proyek', 'Artikel', 'Pesan', 'Suka'];
   async function pagePengaturan(view) {
     const res = await Promise.all([load('kv.get', { tab: 'Pengaturan' }), load('system.status', {}, { maxAge: 60000 })]);
     if (!res[0].ok) throw new Error(failMsg(res[0]));
@@ -1052,6 +1168,10 @@
       }).join('') + '</div></div>' +
       fieldHtml({ k: 'jumlah_proyek_awal', label: 'Jumlah kartu proyek yang tampil awal', max: 2, ph: '6' }, s.jumlah_proyek_awal) +
       fieldHtml({ k: 'deskripsi_footer', label: 'Kalimat di footer', type: 'textarea', rows: 2, max: 220 }, s.deskripsi_footer) +
+      fieldHtml({ k: 'judul_mitra', label: 'Judul baris logo mitra (hero)', max: 80, ph: 'Trusted by' }, s.judul_mitra) +
+      fieldHtml({ k: 'cta_judul', label: 'Judul ajakan di atas Contact', max: 80, ph: 'Let\'s Work Together' }, s.cta_judul) +
+      fieldHtml({ k: 'cta_teks', label: 'Kalimat ajakan', type: 'textarea', rows: 2, max: 220, ph: 'Have a project in mind? I\'d love to hear about it.' }, s.cta_teks) +
+      fieldHtml({ k: 'cta_bg_id', label: 'Foto latar ajakan (opsional)', type: 'image', folder: 'profil', help: 'Kosongkan untuk memakai ilustrasi siluet kota bawaan. Tersimpan otomatis setelah diunggah.' }, s.cta_bg_id) +
       fieldHtml({ k: 'email_notifikasi', label: 'Email penerima notifikasi pesan', max: 120, ph: s.email_notifikasi_bawaan || '', help: 'Tidak tampil di situs. Kosongkan untuk memakai email akun Google pemilik.' }, s.email_notifikasi) +
       '<button class="btn btn-primary" type="submit" id="site-save">' + I('check', 'icon-sm') + 'Simpan Pengaturan</button></form>' +
       '<section class="card card-pad full" id="sys-card"></section>' +
@@ -1110,6 +1230,11 @@
       Sesi.save(r.data.token, r.data.exp, (Sesi.load() || {}).nama);
       $('#f-pass').reset();
       msg.innerHTML = '<div class="alert alert-ok">' + I('check-circle', 'icon-sm') + '<span>' + esc(r.message) + '</span></div>';
+    });
+    bindUploads($('#f-site'), async function (box, r) {
+      const sv = await write('settings.save', { values: { cta_bg_id: r.id || '' } }, ['kv.get']);
+      if (sv.ok) { MV.store.del('mv_boot'); MV.toast(r.id ? 'Foto latar ajakan diperbarui.' : 'Foto latar ajakan dilepas.', 'ok'); } else MV.toast(failMsg(sv), 'err');
+      A.dirty = false;
     });
     $('#f-site').addEventListener('submit', async function (e) {
       e.preventDefault();
