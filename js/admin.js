@@ -559,8 +559,8 @@
     const v = $('input[data-k]', box).value, kind = box.dataset.kind, slot = $('.up-slot', box);
     if (v) {
       slot.innerHTML = '<div class="up-preview"><span class="ph">' + MV.imgTag(v, '', 300) + (kind === 'file' ? I('file-text') : '') + '</span><div class="meta"><b>Berkas tersimpan di Drive</b><span class="mono" style="font-size:11.5px">' + esc(v.slice(0, 18)) + '…</span></div>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-preview>' + I('eye', 'icon-sm') + 'Lihat</button><label class="btn btn-secondary btn-sm" style="position:relative;overflow:hidden">Ganti<input type="file" data-file accept="' + (kind === 'file' ? 'image/jpeg,image/png,image/webp,application/pdf' : 'image/jpeg,image/png,image/webp') + '" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>' +
-        '<button type="button" class="icon-btn" data-clear aria-label="Lepas berkas">' + I('x') + '</button></div>';
+        '<div class="up-actions"><button type="button" class="btn btn-ghost btn-sm" data-preview>' + I('eye', 'icon-sm') + 'Lihat</button><label class="btn btn-secondary btn-sm" style="position:relative;overflow:hidden">' + I('refresh', 'icon-sm') + 'Ganti<input type="file" data-file accept="' + (kind === 'file' ? 'image/jpeg,image/png,image/webp,application/pdf' : 'image/jpeg,image/png,image/webp') + '" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>' +
+        '<button type="button" class="btn btn-sm up-del" data-clear>' + I('trash', 'icon-sm') + 'Hapus</button></div></div>';
     } else {
       slot.innerHTML = '<label class="drop">' + I(kind === 'file' ? 'file-text' : 'image') + '<span>Seret berkas ke sini atau klik untuk memilih</span><small>' + (kind === 'file' ? 'Gambar (dikompres otomatis) atau PDF maks. 5 MB' : 'JPG, PNG, atau WebP — dikompres otomatis ±1 MB') + '</small>' +
         '<input type="file" data-file accept="' + (kind === 'file' ? 'image/jpeg,image/png,image/webp,application/pdf' : 'image/jpeg,image/png,image/webp') + '"></label>';
@@ -603,9 +603,17 @@
         }
       }
     });
-    root.addEventListener('click', function (e) {
+    root.addEventListener('click', async function (e) {
       const box = e.target.closest('[data-upload]');
-      if (box && e.target.closest('[data-clear]')) { $('input[data-k]', box).value = ''; A.dirty = true; renderUploadSlot(box); if (onFileSaved) onFileSaved(box, { id: '' }); return; }
+      if (box && e.target.closest('[data-clear]')) {
+        const nama = (($('.label', box.closest('.field')) || {}).textContent || 'berkas ini').trim();
+        const ok = await confirmDialog({ title: 'Hapus ' + nama.toLowerCase() + '?', text: 'Berkas dilepas dari isian ini' + (onFileSaved ? ' dan langsung tersimpan.' : '. Klik Simpan / Perbarui Terbitan agar perubahan tampil di situs.') + ' Berkas aslinya tetap ada di Google Drive.', ok: 'Hapus', danger: true, icon: 'trash' });
+        if (!ok) return;
+        $('input[data-k]', box).value = ''; A.dirty = true; renderUploadSlot(box);
+        if (onFileSaved) onFileSaved(box, { id: '' });
+        else MV.toast('Dilepas. Jangan lupa klik Simpan / Perbarui Terbitan.', 'info', 5000);
+        return;
+      }
       if (box && e.target.closest('[data-preview]')) { MV.viewer.open({ type: 'pdf', id: $('input[data-k]', box).value, title: 'Pratinjau berkas', note: 'Pratinjau seperti yang dilihat pengunjung.' }); return; }
       const gd = e.target.closest('[data-gdel]');
       if (gd) { const g = gd.closest('[data-gallery]'), hid = $('input[data-k]', g), id = gd.closest('[data-gid]').dataset.gid; hid.value = hid.value.split(',').filter(function (x) { return x && x !== id; }).join(','); A.dirty = true; renderGallery(g); }
@@ -955,7 +963,7 @@
       } else if (did) {
         slot.innerHTML = '<div class="doc-file"><span class="doc-ico' + (lab === 'PDF' ? '' : ' word') + '">' + esc(lab) + '</span><div class="meta"><b>' + esc(hv('berkas_nama').value || 'Dokumen') + '</b><span>' + esc(lab) + (hv('berkas_ukuran').value ? ' · ' + fmtSize(hv('berkas_ukuran').value) : '') + ' · tersimpan di Google Drive</span></div>' +
           '<button type="button" class="btn btn-ghost btn-sm" data-doc-prev>' + I('eye', 'icon-sm') + 'Pratinjau</button><label class="btn btn-secondary btn-sm" style="position:relative;overflow:hidden">Ganti<input type="file" data-doc-file accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>' +
-          '<button type="button" class="icon-btn" data-doc-clear aria-label="Lepas berkas">' + I('x') + '</button></div>';
+          '<button type="button" class="btn btn-sm up-del" data-doc-clear>' + I('trash', 'icon-sm') + 'Hapus</button></div>';
       } else {
         slot.innerHTML = '<label class="drop doc-drop">' + I('upload') + '<span><b>Seret berkas PDF atau Word ke sini</b> atau klik untuk memilih</span><small>PDF, DOC, atau DOCX — maksimal 10 MB · tersimpan di folder 07_Karya_Ilmiah Google Drive</small>' +
           '<input type="file" data-doc-file accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>';
@@ -981,8 +989,12 @@
       } catch (err) { MV.toast(err.message, 'err', 7000); }
       renderDoc();
     });
-    docPanel.addEventListener('click', function (e) {
-      if (e.target.closest('[data-doc-clear]')) { ['berkas_id', 'berkas_nama', 'berkas_mime', 'berkas_ukuran'].forEach(function (k) { hv(k).value = ''; }); A.dirty = true; renderDoc(); }
+    docPanel.addEventListener('click', async function (e) {
+      if (e.target.closest('[data-doc-clear]')) {
+        const ok = await confirmDialog({ title: 'Hapus berkas dokumen?', text: 'Berkas dilepas dari karya ilmiah ini. Klik Simpan Draf / Perbarui Terbitan agar tersimpan. Berkas aslinya tetap ada di Google Drive.', ok: 'Hapus', danger: true, icon: 'trash' });
+        if (!ok) return;
+        ['berkas_id', 'berkas_nama', 'berkas_mime', 'berkas_ukuran'].forEach(function (k) { hv(k).value = ''; }); A.dirty = true; renderDoc();
+      }
       else if (e.target.closest('[data-doc-prev]')) MV.viewer.open({ type: 'pdf', id: hv('berkas_id').value, title: hv('berkas_nama').value || 'Pratinjau dokumen', note: 'Pratinjau seperti yang dilihat pengunjung.' });
     });
     side.addEventListener('input', function () { A.dirty = true; });
